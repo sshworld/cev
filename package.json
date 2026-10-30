@@ -1,0 +1,22 @@
+{
+  "name": "cev",
+  "version": "0.3.0",
+  "description": "Hand bounded decisions to a Claude + Codex panel over MCP: typed questions in, calibrated answers out, escalate when unsure.",
+  "type": "module",
+  "license": "MIT",
+  "author": "sshworld",
+  "repository": { "type": "git", "url": "git+https://github.com/sshworld/cev.git" },
+  "engines": { "node": ">=20" },
+  "bin": { "cev": "cli/cev.mjs", "cev-mcp": "cli/mcp.mjs" },
+  "files": ["core", "cli"],
+  "scripts": {
+    "test": "node --test test/",
+    "daemon": "node core/daemon.mjs",
+    "mcp": "node cli/mcp.mjs",
+    "bench": "node bench/run.mjs && node bench/analyze.mjs && node bench/report.mjs",
+    "bench:hard": "node bench/run.mjs --tag hard --cases cases-hard.json && node bench/analyze.mjs --tag hard --cases cases-hard.json && node bench/report.mjs --tag hard --cases cases-hard.json",
+    "bench:speed": "node bench/speed.mjs",
+    "bench:multi": "node bench/multi.mjs"
+  },
+  "private": true
+}

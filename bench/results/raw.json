@@ -1,0 +1,2775 @@
+{
+ "at": "2026-10-30T00:31:17.664Z",
+ "cases": [
+  {
+   "id": "pr-1",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning**\n\n- **Rule 1 applies.** PR #517 changes only `README.md` and `docs/faq.md`, both Markdown files, and all CI checks passed. Under this rule, the maintainer on duty may merge without a review.\n- **Rule 2 doesn't apply.** Nothing under `src/` changed, so no approving review is needed.\n- **Rule 3 doesn't apply.** No CI check failed.\n- **Being a first-time contributor doesn't matter here.** None of the rules mention who the author is, so it isn't a reason to hold the PR. Closing it would also be wrong, since no rule forbids the change.\n\nAll the facts the rules depend on are given (which files changed, CI status, review status), so there's enough information to decide.\n\n`★ Insight ─────────────────────────────────────`\n- The rules are triggered by file paths and CI results, not by who wrote the PR. The \"first-time contributor, no reviews\" details are there to tempt you into requesting a review, but no rule asks for one.\n- The `.md`-only check sees file paths, not what's inside them. In practice it's still worth a quick look at a docs PR from a new contributor, for example for misleading links. That's good judgment on top of the rules, not something they require.\n`─────────────────────────────────────────────────`\n\nANSWER: merge",
+    "ms": 10683,
+    "tokensIn": 38936,
+    "tokensOut": 482,
+    "costUSD": 0.32112,
+    "parsed": true,
+    "answer": "merge",
+    "promptChars": 793
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "merge",
+      "conf": 0.94,
+      "agree": true,
+      "escalate": false,
+      "why": "edits README.md and docs/faq.md only (+12 -3). All CI checks passed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "merge": 0.88,
+        "request-review": 0.1,
+        "close": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "Changes limited to Markdown files (*.md) with all CI checks passing may be merged",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "merge": 1,
+        "request-review": 0,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "edits README.md and docs/faq.md only (+12 -3). All CI checks passed.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5280,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2841,
+       "tokensIn": 1632,
+       "tokensOut": 136
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5274,
+       "tokensIn": 6185,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "pr-2",
+   "baseline": {
+    "ok": true,
+    "text": "PR #604 should wait for the author.\n\n- **Approval rule:** The PR changes `src/parser.ts`, so it needs one approving review from a maintainer. @lena-dev is a maintainer and approved it, so this rule is met.\n- **Thread rule:** A PR can only be merged when every review thread is resolved. Two threads from @lena-dev are still open, so it can't be merged yet.\n- **Wait vs. close:** CI passed and the approval rule is met, so the open threads are the only thing blocking it. In that case the rules say to wait for the author, not close the PR. The author hasn't replied yet, but nothing here says that is a reason to close.\n\nANSWER: wait",
+    "ms": 8582,
+    "tokensIn": 38923,
+    "tokensOut": 287,
+    "costUSD": 0.2108566,
+    "parsed": true,
+    "answer": "wait",
+    "promptChars": 760
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "wait",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "wait",
+       "probs": {
+        "merge": 0.02,
+        "wait": 0.95,
+        "close": 0.02,
+        "abstain": 0.01
+       },
+       "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "wait",
+       "probs": {
+        "merge": 0,
+        "wait": 1,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4295,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2799,
+       "tokensIn": 1616,
+       "tokensOut": 138
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4290,
+       "tokensIn": 6170,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "pr-3",
+   "baseline": {
+    "ok": true,
+    "text": "**The PR should wait.**\n\n1. **The rule applies.** The PR only changes `.github/workflows/release.yml`, which is under `.github/workflows/`. So it needs an approving review from a member of `@acme/release`.\n2. **The one approval doesn't clearly count.** @marco-r is described as a maintainer, but nothing says they belong to `@acme/release`. The rules say approvals from people outside that team don't count, and being a maintainer doesn't make someone a team member.\n3. **We can't confirm the merge condition.** CI passed, but merging needs both a passing CI and a confirmed release-team approval. The second part isn't shown.\n4. **Closing isn't justified.** Nothing is wrong with the change. It just lacks a qualifying approval.\n\nNext step: check whether @marco-r is in `@acme/release`. If they are, merge. If not, get a review from someone on that team. Until then, the safe choice is to wait rather than merge on an approval we haven't confirmed.\n\nANSWER: wait",
+    "ms": 12177,
+    "tokensIn": 38902,
+    "tokensOut": 558,
+    "costUSD": 0.2161086,
+    "parsed": true,
+    "answer": "wait",
+    "promptChars": 729
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "abstain",
+      "conf": 0.67,
+      "agree": true,
+      "escalate": true,
+      "why": "one approving review from @marco-r, a maintainer",
+      "missing": "STATE doesn't say whether @marco-r belongs to the @acme/release team. If they do, the PR should be merged. If they don't, it should wait for an approval from someone on @acme/release. / Whether @marco-r is a member of @acme/release."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "merge": 0.25,
+        "wait": 0.4,
+        "close": 0.02,
+        "abstain": 0.33
+       },
+       "evidence": "one approving review from @marco-r, a maintainer",
+       "missing": "STATE doesn't say whether @marco-r belongs to the @acme/release team. If they do, the PR should be merged. If they don't, it should wait for an approval from someone on @acme/release."
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "merge": 0,
+        "wait": 0,
+        "close": 0,
+        "abstain": 1
+       },
+       "evidence": "It has one approving review from @marco-r, a maintainer.",
+       "missing": "Whether @marco-r is a member of @acme/release."
+      }
+     }
+    },
+    "meta": {
+     "ms": 4330,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4075,
+       "tokensIn": 1595,
+       "tokensOut": 248
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4326,
+       "tokensIn": 6168,
+       "tokensOut": 98
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "issue-1",
+   "baseline": {
+    "ok": true,
+    "text": "I'd label it **enhancement**.\n\n- **Enhancement:** The issue asks for a `--json` flag, which doesn't exist yet. That fits the enhancement rule directly.\n- **Bug:** This would need existing behaviour to contradict the documentation. The README only says the output \"can be piped to other tools.\" A coloured table can still be piped, and many CLIs drop the colour codes when output isn't going to a terminal. The reporter doesn't say piping fails, gives garbled output, or crashes. They only point out that a table is awkward to parse. No contradiction is shown, so the bug rule isn't met.\n- **Question:** This doesn't fit. The reporter isn't asking how to use the command; they're asking for a new feature.\n\nOne thing could change this. If `widget list` sends ANSI colour codes even when piped, and those codes break other tools, that would contradict the README and should get a separate `bug` label. Nothing in the issue says this happens, so the request as written is an enhancement.\n\nANSWER: enhancement",
+    "ms": 14830,
+    "tokensIn": 38919,
+    "tokensOut": 817,
+    "costUSD": 0.2214246,
+    "parsed": true,
+    "answer": "enhancement",
+    "promptChars": 783
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "enhancement",
+      "conf": 0.81,
+      "agree": true,
+      "escalate": false,
+      "why": "asks for a new `--json` flag. No crash or error is reported.",
+      "missing": "Whether a coloured table actually breaks piping, which would contradict the README line \"can be piped to other tools\""
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "enhancement",
+       "probs": {
+        "bug": 0.25,
+        "enhancement": 0.65,
+        "question": 0.03,
+        "abstain": 0.07
+       },
+       "evidence": "asks for a new `--json` flag. No crash or error is reported.",
+       "missing": "Whether a coloured table actually breaks piping, which would contradict the README line \"can be piped to other tools\""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "enhancement",
+       "probs": {
+        "bug": 0.04,
+        "enhancement": 0.96,
+        "question": 0,
+        "abstain": 0
+       },
+       "evidence": "asks for a new `--json` flag",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5298,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4295,
+       "tokensIn": 1620,
+       "tokensOut": 272
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5287,
+       "tokensIn": 6176,
+       "tokensOut": 101
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "issue-2",
+   "baseline": {
+    "ok": true,
+    "text": "**Priority: p2**\n\n- **Not p1:** The issue says nothing crashes and no data is lost, so the p1 rule doesn't apply.\n- **p2 fits:** `docs/export.md` says the output is comma-separated, but `widget export --format csv` writes semicolons. The reporter is on v3.2.0, which is the latest release. That is exactly \"documented behaviour is wrong in the latest release.\"\n- **Not p3:** p3 is for issues that match no other rule, and this one matches p2.\n\nThe code might be right and the docs wrong, but that doesn't change the priority. The program and its documentation disagree in the latest release either way, and that is what p2 covers. Which one to fix is a separate decision.\n\nANSWER: p2",
+    "ms": 8979,
+    "tokensIn": 38911,
+    "tokensOut": 321,
+    "costUSD": 0.2114406,
+    "parsed": true,
+    "answer": "p2",
+    "promptChars": 710
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "p2",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "docs/export.md says the output is comma-separated. The reporter is on v3.2.0, which is the latest release."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "p2",
+       "probs": {
+        "p1": 0.02,
+        "p2": 0.9,
+        "p3": 0.05,
+        "abstain": 0.03
+       },
+       "evidence": "docs/export.md says the output is comma-separated. The reporter is on v3.2.0, which is the latest release.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "p2",
+       "probs": {
+        "p1": 0,
+        "p2": 1,
+        "p3": 0,
+        "abstain": 0
+       },
+       "evidence": "writes semicolon-separated values, while docs/export.md says the output is comma-separated.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4596,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3839,
+       "tokensIn": 1604,
+       "tokensOut": 217
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4592,
+       "tokensIn": 6172,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "issue-3",
+   "baseline": {
+    "ok": true,
+    "text": "Yes, #1250 should be closed as a duplicate of #1188. Both rule conditions are met:\n\n1. **A maintainer linked an existing issue.** @priya-m is a maintainer, linked #1188, and wrote \"Same root cause as #1188\".\n2. **The root cause is the same.** Both issues describe the crash on startup when the config path is empty.\n\n#1188 is still open, but the rules allow the existing issue to be open or closed, so that doesn't block closing #1250.\n\nANSWER: YES",
+    "ms": 8616,
+    "tokensIn": 38908,
+    "tokensOut": 204,
+    "costUSD": 0.2090766,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 706
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.95,
+       "abstain": false,
+       "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5587,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2736,
+       "tokensIn": 1491,
+       "tokensOut": 115
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5584,
+       "tokensIn": 6117,
+       "tokensOut": 54
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "ci-1",
+   "baseline": {
+    "ok": true,
+    "text": "**Decision: quarantine `test_upload_timeout`.**\n\n1. **Is it flaky or real?** Run #9921 failed, and two re-runs with no code change both passed. Under the rules, that makes it flaky. A real failure would have shown up on every re-run, and this one didn't show up on any.\n2. **Has it hit the threshold?** CI history shows 4 failures in the last 30 days, which is at or above the threshold of 3. It doesn't matter whether #9921 is one of those 4: the count is at least 4 either way.\n3. **Retry or quarantine?** Retrying is only for flaky tests below the threshold. This one is above it, so it gets quarantined.\n\nThe failures happened on 4 unrelated commits. That points to a problem in the test or its environment, such as a timing-dependent timeout, rather than a regression from any one change. That fits the flaky verdict.\n\nANSWER: quarantine",
+    "ms": 9603,
+    "tokensIn": 38936,
+    "tokensOut": 362,
+    "costUSD": 0.2124606,
+    "parsed": true,
+    "answer": "quarantine",
+    "promptChars": 808
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "quarantine",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "this test failed on 4 unrelated commits in the last 30 days"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "quarantine",
+       "probs": {
+        "real": 0.02,
+        "retry": 0.05,
+        "quarantine": 0.9,
+        "abstain": 0.03
+       },
+       "evidence": "this test failed on 4 unrelated commits in the last 30 days",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "quarantine",
+       "probs": {
+        "real": 0,
+        "retry": 0,
+        "quarantine": 1,
+        "abstain": 0
+       },
+       "evidence": "CI history shows this test failed on 4 unrelated commits in the last 30 days.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5039,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2863,
+       "tokensIn": 1634,
+       "tokensOut": 132
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5035,
+       "tokensIn": 6186,
+       "tokensOut": 65
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "ci-2",
+   "baseline": {
+    "ok": true,
+    "text": "**Yes. Under the first rule, the PR caused this failure.**\n\n`test_parse_dates` failed on Linux, macOS and Windows, and all three re-runs failed the same way, so the failure reproduces every time. The same test passes on main at the PR's base commit, so the failure isn't there before the PR. The second rule doesn't apply, because the failure doesn't occur on the base commit.\n\nThe PR changes `src/dates.py`, and the failing test is a date-parsing test, which points the same way.\n\n`★ Insight ─────────────────────────────────────`\n- Re-running the jobs rules out a flaky failure, since a flaky one would pass on some runs. Testing the base commit rules out a failure that was already there.\n- When the same failure appears on all three OSes, the cause is probably in the code logic, not an OS-specific quirk like path separators.\n`─────────────────────────────────────────────────`\n\nANSWER: YES",
+    "ms": 9572,
+    "tokensIn": 38914,
+    "tokensOut": 340,
+    "costUSD": 0.2118446,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 712
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "all three re-runs failed the same way. The same test passes on main at the PR's base commit."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.95,
+       "abstain": false,
+       "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5194,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2930,
+       "tokensIn": 1495,
+       "tokensOut": 111
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5123,
+       "tokensIn": 6121,
+       "tokensOut": 54
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "ci-3",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning:**\n\n- **What failed:** The job failed while installing dependencies, with `npm ERR! network ETIMEDOUT`. That error means a network request timed out. It's a problem with the build machine or the npm registry, not with the code.\n- **What didn't run:** No test or lint step started, so there's no assertion failure to investigate and no lint error to send back to the author.\n- **The PR itself:** It changes one line in `src/format.ts`. That doesn't touch `package.json` or the lockfile, so the PR didn't cause the install failure.\n- **The rule that applies:** \"Infrastructure errors that occur before any test runs, such as network timeouts… get a re-run.\" This case matches that rule exactly.\n\n`★ Insight ─────────────────────────────────────`\n- The useful question with a CI failure is which step failed. A failure during setup (install, checkout, runner startup) says little about the code. A failure during tests or lint says something about the PR.\n- If the same timeout keeps happening on re-runs, it's worth looking at the registry, proxy or caching setup. One timeout on its own is normal noise.\n`─────────────────────────────────────────────────`\n\nANSWER: rerun",
+    "ms": 9939,
+    "tokensIn": 38906,
+    "tokensOut": 416,
+    "costUSD": 0.2133006,
+    "parsed": true,
+    "answer": "rerun",
+    "promptChars": 717
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "rerun",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "failed during the dependency install step with `npm ERR! network ETIMEDOUT`. No test or lint step had started."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "rerun",
+       "probs": {
+        "investigate": 0.03,
+        "fix-lint": 0.01,
+        "rerun": 0.95,
+        "abstain": 0.01
+       },
+       "evidence": "failed during the dependency install step with `npm ERR! network ETIMEDOUT`. No test or lint step had started.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "rerun",
+       "probs": {
+        "investigate": 0,
+        "fix-lint": 0,
+        "rerun": 1,
+        "abstain": 0
+       },
+       "evidence": "failed during the dependency install step with `npm ERR! network ETIMEDOUT`",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5359,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2991,
+       "tokensIn": 1617,
+       "tokensOut": 152
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5356,
+       "tokensIn": 6169,
+       "tokensOut": 68
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "dep-1",
+   "baseline": {
+    "ok": true,
+    "text": "PR #890 should be auto-merged. It meets the auto-merge rule on every point:\n\n- **Dependency type:** `prettier-lite` is a devDependency, so the rule requiring manual review for runtime dependencies doesn't apply.\n- **Size of the bump:** going from 2.4.1 to 2.4.3 changes only the last number, so it's a patch bump. The major-version review rule doesn't apply.\n- **CI:** all checks passed.\n\nThe auto-merge rule covers exactly this case. Nothing suggests the PR should be closed, and the information given is enough to decide.\n\nANSWER: auto-merge",
+    "ms": 7834,
+    "tokensIn": 38891,
+    "tokensOut": 242,
+    "costUSD": 0.20970060000000001,
+    "parsed": true,
+    "answer": "auto-merge",
+    "promptChars": 620
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "auto-merge",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "bumping the devDependency `prettier-lite` from 2.4.1 to 2.4.3. All CI checks passed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "auto-merge",
+       "probs": {
+        "auto-merge": 0.95,
+        "manual-review": 0.03,
+        "close": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "bumping the devDependency `prettier-lite` from 2.4.1 to 2.4.3. All CI checks passed.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "auto-merge",
+       "probs": {
+        "auto-merge": 1,
+        "manual-review": 0,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "bumping the devDependency `prettier-lite` from 2.4.1 to 2.4.3. All CI checks passed.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4380,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3018,
+       "tokensIn": 1599,
+       "tokensOut": 155
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4376,
+       "tokensIn": 6152,
+       "tokensOut": 81
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "dep-2",
+   "baseline": {
+    "ok": true,
+    "text": "PR #893 needs manual review. Two separate rules each require it:\n\n1. **It's a major version bump.** 4.9.2 → 5.0.0 changes the major version, and the rules say major bumps of any dependency need manual review.\n2. **It's a runtime dependency.** `yaml-core` is a runtime dependency, and bumps of runtime dependencies need manual review whatever the version change.\n\nThe points that make it look safe don't change this:\n- **Passing CI** doesn't count, because the last rule says CI and the changelog never waive manual review.\n- **The changelog** says the only removal is `parseLegacy()`, which acme/widget doesn't call. That's useful for the reviewer, but it's exactly the kind of \"harmless-looking changelog\" the rule names. Changelogs can also leave out behaviour changes, such as different parsing defaults or how types are handled.\n\nAuto-merge isn't allowed, because it only covers patch and minor bumps of devDependencies, and this PR is neither. Closing isn't justified either: nothing suggests the upgrade is unwanted or broken, so it should go to a person for review.\n\nANSWER: manual-review",
+    "ms": 9682,
+    "tokensIn": 38953,
+    "tokensOut": 417,
+    "costUSD": 0.2136966,
+    "parsed": true,
+    "answer": "manual-review",
+    "promptChars": 796
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "manual-review",
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "bumping the runtime dependency `yaml-core` from 4.9.2 to 5.0.0"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "manual-review",
+       "probs": {
+        "auto-merge": 0.01,
+        "manual-review": 0.97,
+        "close": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "bumping the runtime dependency `yaml-core` from 4.9.2 to 5.0.0",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "manual-review",
+       "probs": {
+        "auto-merge": 0,
+        "manual-review": 1,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "bumping the runtime dependency `yaml-core` from 4.9.2 to 5.0.0.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4341,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2903,
+       "tokensIn": 1660,
+       "tokensOut": 146
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4337,
+       "tokensIn": 6188,
+       "tokensOut": 73
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "dep-3",
+   "baseline": {
+    "ok": true,
+    "text": "Yes, PR #901 can be merged during the freeze. It meets both rules.\n\n1. **Freeze exception.** During the freeze, only PRs that fix a High or Critical security advisory may be merged. PR #901 bumps `http-tiny` from 1.8.0 to 1.8.1 to fix an advisory rated High. The CVSS v3.1 base score of 7.5 agrees with that rating, since High covers 7.0–8.9.\n2. **Merge requirements.** All CI checks passed and a maintainer approved the PR, so it has passing CI and the one maintainer approval every merge needs.\n\n`★ Insight ─────────────────────────────────────`\n- The freeze exception depends on the advisory's **severity rating**, not on who opened the PR. A Dependabot PR counts the same as one written by a person.\n- The freeze rule and the CI/approval rule are separate requirements, and a PR has to meet both. Fixing a High advisory doesn't excuse a PR from passing CI or getting a maintainer's approval.\n`─────────────────────────────────────────────────`\n\nANSWER: YES",
+    "ms": 10077,
+    "tokensIn": 38933,
+    "tokensOut": 421,
+    "costUSD": 0.21361660000000002,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 719
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "fix an advisory rated High (CVSS v3.1 base score 7.5). All CI checks passed and a maintainer approved it."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.95,
+       "abstain": false,
+       "evidence": "fix an advisory rated High (CVSS v3.1 base score 7.5). All CI checks passed and a maintainer approved it.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "fix an advisory rated High (CVSS v3.1 base score 7.5). All CI checks passed and a maintainer approved it.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4181,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2938,
+       "tokensIn": 1514,
+       "tokensOut": 126
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4178,
+       "tokensIn": 6131,
+       "tokensOut": 61
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "rel-1",
+   "baseline": {
+    "ok": true,
+    "text": "The next version should be 2.4.0.\n\n- **The date-parsing fix** is a backward-compatible bug fix. On its own it would only need a patch bump (2.3.2).\n- **The new `timeout` parameter on `fetch()`** is new functionality. It's optional and its default keeps the old behaviour, so existing callers don't break. That makes it backward-compatible new functionality, which needs a minor bump.\n- **Nothing was removed or changed incompatibly**, so a major bump (3.0.0) doesn't apply.\n\nThe rule is to use the highest bump that applies, so minor wins over patch. A minor bump resets the patch number to zero: 2.3.1 becomes 2.4.0.\n\n`★ Insight ─────────────────────────────────────`\n- An optional parameter with a default that keeps the old behaviour is the standard way to add features without a major bump. If `timeout` were required, or its default changed how `fetch()` behaves, the same change would need 3.0.0.\n- A release takes one bump, not one per change. A patch fix and a minor feature together give a single minor bump; you don't get 2.4.1.\n`─────────────────────────────────────────────────`\n\nANSWER: 2.4.0",
+    "ms": 10338,
+    "tokensIn": 38939,
+    "tokensOut": 422,
+    "costUSD": 0.2136846,
+    "parsed": true,
+    "answer": "2.4.0",
+    "promptChars": 765
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "2.4.0",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "a new optional `timeout` parameter on `fetch()` whose default keeps the old behaviour"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "2.4.0",
+       "probs": {
+        "2.3.2": 0.02,
+        "2.4.0": 0.96,
+        "3.0.0": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "a new optional `timeout` parameter on `fetch()` whose default keeps the old behaviour",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "2.4.0",
+       "probs": {
+        "2.3.2": 0,
+        "2.4.0": 1,
+        "3.0.0": 0,
+        "abstain": 0
+       },
+       "evidence": "a new optional `timeout` parameter on `fetch()` whose default keeps the old behaviour",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4443,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2957,
+       "tokensIn": 1656,
+       "tokensOut": 151
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4439,
+       "tokensIn": 6200,
+       "tokensOut": 79
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "rel-2",
+   "baseline": {
+    "ok": true,
+    "text": "The next version should be **5.0.0**.\n\n1. **`fix: handle empty headers`** is a fix, so on its own it would bump the patch number (4.7.3).\n2. **`fix(cli): exit code on timeout`** is also a fix and would also bump the patch number. The `(cli)` scope doesn't change the bump level.\n3. **`feat!: rename Client.connect to Client.open`** has a `!` after the type, which marks it as a breaking change. Renaming a public method breaks any code that calls `Client.connect`, so the `!` fits. A breaking change bumps the major number.\n\nThe highest bump wins, so the major bump applies. A major bump resets minor and patch to zero: 4.7.2 becomes **5.0.0**.\n\n`★ Insight ─────────────────────────────────────`\n- The `!` marks a breaking change no matter which type it follows. `fix!:` would also mean a major bump, so `feat` isn't what makes this one major.\n- The answer doesn't depend on commit order. You take the single highest bump from all the commits since the last release and apply it once. Three commits don't mean three bumps.\n- For a `0.y.z` project, many tools such as semantic-release and release-please would bump only the minor number for a breaking change. That rule doesn't apply here because the project is already at 4.x.\n`─────────────────────────────────────────────────`\n\nANSWER: 5.0.0",
+    "ms": 11272,
+    "tokensIn": 38947,
+    "tokensOut": 516,
+    "costUSD": 0.2156286,
+    "parsed": true,
+    "answer": "5.0.0",
+    "promptChars": 736
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "5.0.0",
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "feat!: rename Client.connect to Client.open"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "5.0.0",
+       "probs": {
+        "4.7.3": 0.01,
+        "4.8.0": 0.01,
+        "5.0.0": 0.97,
+        "abstain": 0.01
+       },
+       "evidence": "feat!: rename Client.connect to Client.open",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "5.0.0",
+       "probs": {
+        "4.7.3": 0,
+        "4.8.0": 0,
+        "5.0.0": 1,
+        "abstain": 0
+       },
+       "evidence": "feat!: rename Client.connect to Client.open",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4619,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3008,
+       "tokensIn": 1664,
+       "tokensOut": 136
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4598,
+       "tokensIn": 6209,
+       "tokensOut": 70
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "rel-3",
+   "baseline": {
+    "ok": true,
+    "text": "No. v0.9.5 isn't the correct next version. It should be **v0.10.0**.\n\n- Removing `--legacy` is a breaking change, because scripts that still pass the flag will fail.\n- The project is still at major version 0, and moving to 1.0.0 needs a maintainer vote that hasn't happened. So the major version stays at 0.\n- At major version 0, a breaking change bumps the minor version and resets patch to 0. That takes 0.9.4 to 0.10.0.\n- The empty-input crash fix would only bump the patch on its own. It ships in the same release as the breaking change, so the minor bump covers it. A release takes the single largest bump among its changes.\n\nv0.9.5 would label a breaking change as a patch. Users who pin to `~0.9.x` expecting safe updates would get broken scripts.\n\n`★ Insight ─────────────────────────────────────`\n- Under 0.x rules, the minor number does the job major normally does. That's why breaking changes before 1.0 show up as 0.9 → 0.10.\n- Version numbers aren't decimals, so 0.10.0 comes after 0.9.x even though \"0.10\" looks smaller than \"0.9\".\n`─────────────────────────────────────────────────`\n\nANSWER: NO",
+    "ms": 10532,
+    "tokensIn": 37920,
+    "tokensOut": 445,
+    "costUSD": 0.2105322,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 706
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "the deprecated `--legacy` flag was removed, which breaks scripts that still pass it"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.03,
+       "abstain": false,
+       "evidence": "the deprecated `--legacy` flag was removed, which breaks scripts that still pass it",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "the deprecated `--legacy` flag was removed, which breaks scripts that still pass it",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4368,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3008,
+       "tokensIn": 1490,
+       "tokensOut": 137
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4360,
+       "tokensIn": 6124,
+       "tokensOut": 49
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "sec-1",
+   "baseline": {
+    "ok": true,
+    "text": "The advisory should carry **high** severity.\n\n- **Score to use:** The rules say to use the base score the security team recorded, which is **7.0** (CVSS v3.1). I'm not rescoring it myself.\n- **Band:** In CVSS v3.1, high covers **7.0–8.9**. The bands are inclusive, so 7.0 is the first score in high, not the top of medium (medium ends at 6.9).\n- **Enough information?** Yes. A score and a band table are all the decision needs, so there's no reason to abstain.\n\nANSWER: high",
+    "ms": 7794,
+    "tokensIn": 38904,
+    "tokensOut": 203,
+    "costUSD": 0.2090246,
+    "parsed": true,
+    "answer": "high",
+    "promptChars": 641
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "high",
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "scored it with CVSS v3.1 and recorded a base score of 7.0"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "high",
+       "probs": {
+        "low": 0,
+        "medium": 0.02,
+        "high": 0.97,
+        "critical": 0,
+        "abstain": 0.01
+       },
+       "evidence": "scored it with CVSS v3.1 and recorded a base score of 7.0",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "high",
+       "probs": {
+        "low": 0,
+        "medium": 0,
+        "high": 1,
+        "critical": 0,
+        "abstain": 0
+       },
+       "evidence": "recorded a base score of 7.0.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4724,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3141,
+       "tokensIn": 1616,
+       "tokensOut": 138
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4722,
+       "tokensIn": 6181,
+       "tokensOut": 60
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "sec-2",
+   "baseline": {
+    "ok": true,
+    "text": "**Classification**\n\n1. **Does it affect a released package?** No. The documentation site is a separate static site and isn't part of any released package, so the private-advisory rule doesn't apply.\n2. **Does it affect only the documentation website?** Yes. The reflected XSS is in the docs site's search box, and no released artifact is affected. That matches the public-issue rule.\n3. **Is there a reproduction?** Yes. The report includes a working URL on docs.widget.example, so there's no need to ask for more information.\n\n`★ Insight ─────────────────────────────────────`\n- These rules sort reports by **which artifact is affected**, not by what kind of bug it is. An XSS counts as a security bug, but here it falls in the \"docs website only\" category.\n- One practical caveat: the docs site is live, so a public issue reveals a working exploit until the fix is deployed. When filing, describe the problem without pasting the full payload URL, and fix it quickly. This doesn't change the classification, only how carefully the issue is written.\n`─────────────────────────────────────────────────`\n\nANSWER: public-issue",
+    "ms": 10531,
+    "tokensIn": 38903,
+    "tokensOut": 437,
+    "costUSD": 0.2136966,
+    "parsed": true,
+    "answer": "public-issue",
+    "promptChars": 820
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "public-issue",
+      "conf": 0.93,
+      "agree": true,
+      "escalate": false,
+      "why": "a separate static site that is not part of any released package"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "public-issue",
+       "probs": {
+        "private-advisory": 0.12,
+        "public-issue": 0.85,
+        "request-info": 0.02,
+        "abstain": 0.01
+       },
+       "evidence": "a separate static site that is not part of any released package",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "public-issue",
+       "probs": {
+        "private-advisory": 0,
+        "public-issue": 1,
+        "request-info": 0,
+        "abstain": 0
+       },
+       "evidence": "a separate static site that is not part of any released package",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4780,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3742,
+       "tokensIn": 1617,
+       "tokensOut": 195
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4776,
+       "tokensIn": 6174,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "sec-3",
+   "baseline": {
+    "ok": true,
+    "text": "There isn't enough information to choose between the two rules.\n\n**Why:**\n- The rules depend entirely on which release line has the bug. A supported line (v3.x/v4.x) means a private advisory. An end-of-life line only (v1.x/v2.x) means a public issue.\n- The reporter gave no version. \"An old install on a lab server\" could mean v2.x (end-of-life) or an older v3.x (still supported). \"Old\" doesn't map to either side.\n- The maintainers haven't reproduced it, so nothing confirms which versions are affected.\n- Picking \"public issue\" now would be risky. If v3.x or v4.x turns out to be affected, a working exploit would be public before a fix exists, and that can't be undone. Picking \"private advisory\" would mean assuming a fact nobody has checked.\n\n**What to do now:** Keep the report confidential while the version is unknown. Ask the reporter for the exact version (for example, `widget --version` output). Have the maintainers run the proof of concept against current v3.x and v4.x releases. Once they know whether a supported line is affected, the rules decide the outcome directly.\n\nANSWER: ABSTAIN",
+    "ms": 10720,
+    "tokensIn": 38921,
+    "tokensOut": 485,
+    "costUSD": 0.21480059999999998,
+    "parsed": true,
+    "answer": "abstain",
+    "promptChars": 775
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "abstain",
+      "conf": 0.75,
+      "agree": true,
+      "escalate": true,
+      "why": "tested \"an old install on a lab server\" and give no version number",
+      "missing": "The affected version: we don't know if the bug is in a supported line (v3.x/v4.x) or only in end-of-life lines (v1.x/v2.x). We also need the maintainers to reproduce it on current releases. / The affected release line, including whether the vulnerability affects supported v3.x/v4.x or only end-of-life v1.x/v2.x."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "private-advisory": 0.3,
+        "public-issue": 0.2,
+        "abstain": 0.5
+       },
+       "evidence": "tested \"an old install on a lab server\" and give no version number",
+       "missing": "The affected version: we don't know if the bug is in a supported line (v3.x/v4.x) or only in end-of-life lines (v1.x/v2.x). We also need the maintainers to reproduce it on current releases."
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "private-advisory": 0,
+        "public-issue": 0,
+        "abstain": 1
+       },
+       "evidence": "give no version number",
+       "missing": "The affected release line, including whether the vulnerability affects supported v3.x/v4.x or only end-of-life v1.x/v2.x."
+      }
+     }
+    },
+    "meta": {
+     "ms": 5935,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3365,
+       "tokensIn": 1614,
+       "tokensOut": 195
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5909,
+       "tokensIn": 6179,
+       "tokensOut": 87
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "mod-1",
+   "baseline": {
+    "ok": true,
+    "text": "The right action is a written warning.\n\n- **It's a personal insult.** \"You're an idiot\" attacks the maintainer, not the design. Disagreeing with the design is fine, but name-calling breaks the CODE_OF_CONDUCT.\n- **It's the first violation.** Moderation records show nothing earlier from @rustacean42, so the second-violation rule (30-day temporary ban) doesn't apply.\n- **It's not a threat or sustained harassment.** It's one comment with no threat, so a permanent ban isn't justified.\n- **Taking no action would be wrong.** The comment clearly breaks the rule against personal insults.\n\nThe rules point to exactly one outcome. The warning should be logged in the moderation records, so that any further violation within 6 months leads to the temporary ban.\n\nANSWER: warning",
+    "ms": 9001,
+    "tokensIn": 38519,
+    "tokensOut": 295,
+    "costUSD": 0.20778459999999999,
+    "parsed": true,
+    "answer": "warning",
+    "promptChars": 756
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "warning",
+      "conf": 0.97,
+      "agree": true,
+      "escalate": false,
+      "why": "Moderation records show no earlier violations by @rustacean42."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "warning",
+       "probs": {
+        "no-action": 0.02,
+        "warning": 0.93,
+        "temp-ban": 0.03,
+        "perm-ban": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "Moderation records show no earlier violations by @rustacean42.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "warning",
+       "probs": {
+        "no-action": 0,
+        "warning": 1,
+        "temp-ban": 0,
+        "perm-ban": 0,
+        "abstain": 0
+       },
+       "evidence": "Moderation records show no earlier violations by @rustacean42.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4375,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3211,
+       "tokensIn": 1668,
+       "tokensOut": 143
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4370,
+       "tokensIn": 6183,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "mod-2",
+   "baseline": {
+    "ok": true,
+    "text": "Issue #1310 should stay open in the tracker.\n\nThe issue does two things. It asks how to configure an HTTP proxy for `widget sync`, which is a usage question; on its own, that would go to Discussions. It also reports that the README's \"Proxy settings\" link returns a 404, which is broken documentation. The rules say issues reporting broken documentation stay open in the tracker.\n\nThe broken link is the deciding factor. It's a concrete defect in the project's docs that someone has to fix, and it's probably why the reporter couldn't answer the question themselves. Moving the issue to Discussions would take that defect out of the tracker, where it could be forgotten. Fixing the link would likely answer the usage question too. It isn't spam, so closing it doesn't apply.\n\nIf maintainers want the proxy question answered on its own, they can reply in the issue or open a separate Discussion. The issue itself should stay open until the link is fixed.\n\nANSWER: keep-open",
+    "ms": 11192,
+    "tokensIn": 38894,
+    "tokensOut": 448,
+    "costUSD": 0.2138446,
+    "parsed": true,
+    "answer": "keep-open",
+    "promptChars": 655
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "keep-open",
+      "conf": 0.82,
+      "agree": true,
+      "escalate": false,
+      "why": "the \"Proxy settings\" link in the README returns a 404"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "keep-open",
+       "probs": {
+        "discussion": 0.3,
+        "keep-open": 0.65,
+        "close": 0.01,
+        "abstain": 0.04
+       },
+       "evidence": "the \"Proxy settings\" link in the README returns a 404",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "keep-open",
+       "probs": {
+        "discussion": 0.02,
+        "keep-open": 0.98,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "the \"Proxy settings\" link in the README returns a 404.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5223,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3368,
+       "tokensIn": 1598,
+       "tokensOut": 180
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5221,
+       "tokensIn": 6144,
+       "tokensOut": 91
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "mod-3",
+   "baseline": {
+    "ok": true,
+    "text": "No, the comment shouldn't be hidden. It opens with \"+1, same here\", but the hide rule only applies to comments that say nothing else.\n\nThis one adds new reproduction details that no earlier comment had:\n- **The trigger:** the crash happens only when the config path contains a space. This narrows down the cause a lot and points to path quoting or escaping.\n- **The environment:** macOS 14 and v3.2.0, which helps maintainers reproduce it and narrow down the versions involved.\n- **A stack trace**, which is direct debugging evidence.\n\nThe second rule covers this case exactly: keep comments that add new reproduction details, even if they also say \"+1\".\n\n`★ Insight ─────────────────────────────────────`\n- Moderation rules like these should check what a comment adds, not just look for keywords. A filter that hides anything containing \"+1\" would bury the most useful comment in this thread.\n- When two rules seem to conflict, the narrower one (\"keep if it adds details, even with +1\") is written as the exception to the broader one, so it wins.\n`─────────────────────────────────────────────────`\n\nANSWER: NO",
+    "ms": 11860,
+    "tokensIn": 38929,
+    "tokensOut": 411,
+    "costUSD": 0.2133846,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 739
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "Only happens when the config path contains a space; stack trace attached (macOS 14, v3.2.0)."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.03,
+       "abstain": false,
+       "evidence": "Only happens when the config path contains a space; stack trace attached (macOS 14, v3.2.0).",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "Only happens when the config path contains a space; stack trace attached (macOS 14, v3.2.0).",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5538,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3372,
+       "tokensIn": 1519,
+       "tokensOut": 116
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5531,
+       "tokensIn": 6138,
+       "tokensOut": 58
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "agent-1",
+   "baseline": {
+    "ok": true,
+    "text": "Yes, task #57 should be marked done, because it meets all three completion criteria:\n\n1. **All tests pass:** confirmed.\n2. **Coverage of the target file is at least 85%:** `src/config.ts` is at 92%.\n3. **Only files in scope changed:** this is a test task, so its scope is `tests/`. The diff only touches `tests/config.test.ts`, which is inside that scope.\n\nNone of the other rules apply. No retry is needed because the criteria are already met. A human doesn't need to take over because only 1 of 3 attempts was used and nothing outside the scope changed.\n\nANSWER: YES",
+    "ms": 8224,
+    "tokensIn": 37962,
+    "tokensOut": 243,
+    "costUSD": 0.2068282,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 843
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "All tests pass, line coverage of src/config.ts is now 92%, and the diff only touches tests/config.test.ts."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.97,
+       "abstain": false,
+       "evidence": "All tests pass, line coverage of src/config.ts is now 92%, and the diff only touches tests/config.test.ts.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "All tests pass, line coverage of src/config.ts is now 92%, and the diff only touches tests/config.test.ts.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6878,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2858,
+       "tokensIn": 1534,
+       "tokensOut": 123
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6870,
+       "tokensIn": 6149,
+       "tokensOut": 56
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "agent-2",
+   "baseline": {
+    "ok": true,
+    "text": "Task #61 should go to a **human**.\n\n1. **Done?** No. All checks pass, but the diff edits `src/auth/session.ts`, which is outside the task's scope (`docs/`). A task only counts as done when both conditions hold.\n2. **Retry?** Normally a failed task on attempt 2 of 3 would be retried. But the rule about out-of-scope changes overrides that: when the agent edits files outside the scope, a human takes over no matter how many attempts were used.\n3. **Human.** That override rule applies here. It also makes sense, since an unexpected change to an authentication file during a docs-only task is the kind of thing a person should review.\n\n`★ Insight ─────────────────────────────────────`\n- **Order matters:** the \"regardless of attempts\" rule takes priority, so check it before the retry rule. If you check retry first, you'd send this back to the agent.\n- **Passing checks don't prove the change is safe:** checks test whether things work, not whether the agent stayed in its lane. That's why scope has its own condition.\n- **Where the extra edit landed matters:** a stray change to auth/session code can affect security, which is a good reason to stop retrying and have someone look at it.\n`─────────────────────────────────────────────────`\n\nANSWER: human",
+    "ms": 11184,
+    "tokensIn": 38931,
+    "tokensOut": 453,
+    "costUSD": 0.2142406,
+    "parsed": true,
+    "answer": "human",
+    "promptChars": 796
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "human",
+      "conf": 0.96,
+      "agree": true,
+      "escalate": false,
+      "why": "Besides 7 files in docs/, the diff also edits src/auth/session.ts. The task's scope is docs/."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "human",
+       "probs": {
+        "done": 0.02,
+        "retry": 0.05,
+        "human": 0.92,
+        "abstain": 0.01
+       },
+       "evidence": "Besides 7 files in docs/, the diff also edits src/auth/session.ts. The task's scope is docs/.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "human",
+       "probs": {
+        "done": 0,
+        "retry": 0,
+        "human": 1,
+        "abstain": 0
+       },
+       "evidence": "Besides 7 files in docs/, the diff also edits src/auth/session.ts.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5380,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2908,
+       "tokensIn": 1623,
+       "tokensOut": 143
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5377,
+       "tokensIn": 6181,
+       "tokensOut": 61
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "agent-3",
+   "baseline": {
+    "ok": true,
+    "text": "The task is not done. Two of the 140 tests still fail, and the \"done\" rule needs every test to pass. The diff stays inside `src/cli/`, but that doesn't make up for the failing tests.\n\nThat leaves two possible routes, and both depend on how many attempts the agent has used:\n- Fewer than 3 attempts means **retry**.\n- 3 attempts means **human**.\n\nThe handoff doesn't give the attempt count, so I can't choose between them. Picking \"retry\" could exceed the limit, and picking \"human\" could take the task away from the agent too early. The router should get the attempt count before routing the task.\n\nANSWER: ABSTAIN",
+    "ms": 8540,
+    "tokensIn": 38935,
+    "tokensOut": 250,
+    "costUSD": 0.2102126,
+    "parsed": true,
+    "answer": "abstain",
+    "promptChars": 770
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "abstain",
+      "conf": 0.5,
+      "agree": true,
+      "escalate": true,
+      "why": "The handoff does not say how many attempts the agent has used.",
+      "missing": "Number of attempts used: tests fail (2 of 140), so routing is retry if fewer than 3 attempts, human if 3. / The number of attempts used determines whether to retry or route to a human."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "done": 0,
+        "retry": 0.5,
+        "human": 0.5,
+        "abstain": 0
+       },
+       "evidence": "The handoff does not say how many attempts the agent has used.",
+       "missing": "Number of attempts used: tests fail (2 of 140), so routing is retry if fewer than 3 attempts, human if 3."
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "done": 0,
+        "retry": 0,
+        "human": 0,
+        "abstain": 1
+       },
+       "evidence": "The handoff does not say how many attempts the agent has used.",
+       "missing": "The number of attempts used determines whether to retry or route to a human."
+      }
+     }
+    },
+    "meta": {
+     "ms": 4969,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3224,
+       "tokensIn": 1627,
+       "tokensOut": 167
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4929,
+       "tokensIn": 6182,
+       "tokensOut": 75
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "hyg-1",
+   "baseline": {
+    "ok": true,
+    "text": "The bot should mark issue #977 stale.\n\n- **Exemption check:** The issue's only label is `needs-info`. It isn't labelled `pinned` or `security`, so the stale rules apply.\n- **Step 1 (mark stale):** The issue has had no activity for 64 days, which is past the 60-day threshold. It doesn't have the `stale` label yet, so it should get it now.\n- **Step 2 (close):** Closing needs the `stale` label plus a further 14 days with no activity. The label hasn't been applied yet, so the 14 days haven't started. Closing now would be too early.\n\n`★ Insight ─────────────────────────────────────`\n- The two steps happen one after the other: the 14-day countdown only starts once the `stale` label is applied. So a ticket that has been inactive for 74 or more days but was never labelled still gets marked stale first, not closed.\n- In some real stale bots, a `needs-info` label shortens the timeouts. Rules can't assume that unless they say so, and these rules only exempt `pinned` and `security`.\n`─────────────────────────────────────────────────`\n\nANSWER: mark-stale",
+    "ms": 9961,
+    "tokensIn": 38891,
+    "tokensOut": 407,
+    "costUSD": 0.2130006,
+    "parsed": true,
+    "answer": "mark-stale",
+    "promptChars": 657
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "mark-stale",
+      "conf": 0.97,
+      "agree": true,
+      "escalate": false,
+      "why": "no activity for 64 days. Its only label is `needs-info`; it does not have the `stale` label yet"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "mark-stale",
+       "probs": {
+        "no-action": 0.03,
+        "mark-stale": 0.93,
+        "close": 0.02,
+        "abstain": 0.02
+       },
+       "evidence": "no activity for 64 days. Its only label is `needs-info`; it does not have the `stale` label yet",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "mark-stale",
+       "probs": {
+        "no-action": 0,
+        "mark-stale": 1,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "no activity for 64 days. Its only label is `needs-info`; it does not have the `stale` label yet.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4808,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3047,
+       "tokensIn": 1596,
+       "tokensOut": 147
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4805,
+       "tokensIn": 6168,
+       "tokensOut": 77
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "hyg-2",
+   "baseline": {
+    "ok": true,
+    "text": "**No, it can't be deleted yet.**\n\nThe rule needs two conditions to hold, and only the first one does:\n\n1. **Merged into main:** Yes. PR #640 merged it three weeks ago.\n2. **No open PR uses it as head or base:** No. Open PR #702 uses `feature/csv-export` as its base branch.\n\nThe `release/*` rule doesn't apply here because the branch is named `feature/...`.\n\nThe branch can be deleted once PR #702 is merged, closed or moved to a different base, for example `main`.\n\n`★ Insight ─────────────────────────────────────`\n- On GitHub, deleting a branch that an open PR targets as its base closes that PR automatically. Reopening it later takes extra work, which is why the rule checks the base as well as the head.\n- Stacked PRs often end up in this state when the lower PR merges first. The usual fix is to retarget #702 to `main` before deleting the branch.\n`─────────────────────────────────────────────────`\n\nANSWER: NO",
+    "ms": 9609,
+    "tokensIn": 38872,
+    "tokensOut": 374,
+    "costUSD": 0.21218859999999998,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 591
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "Open PR #702 uses `feature/csv-export` as its base branch."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.02,
+       "abstain": false,
+       "evidence": "Open PR #702 uses `feature/csv-export` as its base branch.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "Open PR #702 uses `feature/csv-export` as its base branch.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4428,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2784,
+       "tokensIn": 1453,
+       "tokensOut": 107
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4423,
+       "tokensIn": 6091,
+       "tokensOut": 47
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "hyg-3",
+   "baseline": {
+    "ok": true,
+    "text": "No, the stale bot shouldn't close issue #811.\n\n1. **Timing on its own would allow closing.** The issue has been `stale` for 20 days with no activity, which is past the 14-day limit.\n2. **The `security` label exempts it.** The rules say issues labelled `pinned` or `security` are exempt from both steps. #811 has the `security` label, so the close step doesn't apply to it.\n3. **There's enough information to decide.** The labels and timing are both given, so there's no reason to abstain.\n\nThe issue should probably not have received the `stale` label at all, since the exemption also covers the labelling step. That may point to a bug in the bot or a label that was applied by hand. Either way, closing it would be wrong.\n\nANSWER: NO",
+    "ms": 8506,
+    "tokensIn": 37898,
+    "tokensOut": 259,
+    "costUSD": 0.2066362,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 634
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "Its labels are `stale`, `bug` and `security`."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.05,
+       "abstain": false,
+       "evidence": "Issues labelled `pinned` or `security` are exempt from both steps",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "Its labels are `stale`, `bug` and `security`.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4087,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2894,
+       "tokensIn": 1468,
+       "tokensOut": 106
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4079,
+       "tokensIn": 6111,
+       "tokensOut": 46
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "score-1",
+   "baseline": {
+    "ok": true,
+    "text": "Bug report #1335 scores 4.\n\n1. **Reproduction steps:** Present. It gives four numbered steps.\n2. **Version:** Present. It names v3.1.0.\n3. **Expected vs actual behaviour:** Present. It gives both outputs.\n\nAll three elements are there, which gives a 4 under the rules. It would need a minimal runnable example to score 5, and the report doesn't include one.\n\nANSWER: 4",
+    "ms": 7669,
+    "tokensIn": 38919,
+    "tokensOut": 159,
+    "costUSD": 0.2082646,
+    "parsed": true,
+    "answer": 4,
+    "promptChars": 749
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 4,
+      "conf": 1,
+      "agree": true,
+      "escalate": false,
+      "why": "It does not include a minimal runnable example."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 0.02,
+        "4": 0.96,
+        "5": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "It does not include a minimal runnable example.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 1,
+        "5": 0,
+        "abstain": 0
+       },
+       "evidence": "states the version (v3.1.0), lists four numbered reproduction steps, and gives the expected and actual output.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4456,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2760,
+       "tokensIn": 1634,
+       "tokensOut": 130
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4438,
+       "tokensIn": 6188,
+       "tokensOut": 78
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "score-2",
+   "baseline": {
+    "ok": true,
+    "text": "I'm scoring the description against the three rules one at a time:\n\n- **Links an issue (+1):** \"Fixes #455\" links an issue, so this point is earned.\n- **Explains why the change is needed (+0):** The description says nothing in its own words about why the change is needed. The rules say a link alone doesn't count, so pointing to #455 doesn't earn this point.\n- **Describes testing (+1):** \"Ran `npm test` locally and added a regression test\" explains how the change was tested, so this point is earned.\n\nThe total is 1 + 0 + 1 = 2.\n\n`★ Insight ─────────────────────────────────────`\n- The \"a link alone does not count\" rule stops one piece of text from earning two points. \"Fixes #455\" already gets the issue-link point, so it can't also count as the reason for the change.\n- This rule exists because issues can be edited, moved or deleted. A reason written in the PR itself stays readable in `git log` and `git blame`.\n`─────────────────────────────────────────────────`\n\nANSWER: 2",
+    "ms": 9420,
+    "tokensIn": 38892,
+    "tokensOut": 363,
+    "costUSD": 0.2121286,
+    "parsed": true,
+    "answer": 2,
+    "promptChars": 680
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 2,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "Fixes #455. Ran `npm test` locally and added a regression test."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "2",
+       "probs": {
+        "0": 0.01,
+        "1": 0.03,
+        "2": 0.93,
+        "3": 0.02,
+        "abstain": 0.01
+       },
+       "evidence": "Fixes #455. Ran `npm test` locally and added a regression test.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "2",
+       "probs": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "abstain": 0
+       },
+       "evidence": "Fixes #455. Ran `npm test` locally and added a regression test.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4245,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3252,
+       "tokensIn": 1591,
+       "tokensOut": 154
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4243,
+       "tokensIn": 6168,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "score-3",
+   "baseline": {
+    "ok": true,
+    "text": "I checked the entry against each of the four Keep a Changelog items:\n\n1. **ISO 8601 release date:** Present. `2026-09-14` is in YYYY-MM-DD format, so no deduction.\n2. **Standard headings:** Present. `### Added` and `### Fixed` are both standard Keep a Changelog headings, so no deduction.\n3. **Version heading linked to a compare URL:** Missing. `[2.4.0]` has no link to a compare URL, so subtract 1.\n4. **`## [Unreleased]` section at the top:** Missing, so subtract 1.\n\nThe score is 5 − 2 = 3, which is above the floor of 1.\n\n`★ Insight ─────────────────────────────────────`\n- Keep a Changelog writes versions as `[2.4.0]` in brackets because they are meant to be reference-style Markdown links. The link targets go at the bottom of the file, for example `[2.4.0]: https://github.com/acme/widget/compare/v2.3.0...v2.4.0`. Without those definitions, the brackets show up as plain text.\n- An `## [Unreleased]` section gives people a place to record changes as they merge them. At release time, you rename it to the new version and add a fresh empty one above it.\n`─────────────────────────────────────────────────`\n\nANSWER: 3",
+    "ms": 10285,
+    "tokensIn": 38991,
+    "tokensOut": 505,
+    "costUSD": 0.2157606,
+    "parsed": true,
+    "answer": 3,
+    "promptChars": 881
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 3,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "The version heading is not linked to a compare URL, and the file has no `## [Unreleased]` section"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "3",
+       "probs": {
+        "1": 0.01,
+        "2": 0.03,
+        "3": 0.92,
+        "4": 0.03,
+        "5": 0.01,
+        "abstain": 0
+       },
+       "evidence": "The version heading is not linked to a compare URL, and the file has no `## [Unreleased]` section",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "3",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 1,
+        "4": 0,
+        "5": 0,
+        "abstain": 0
+       },
+       "evidence": "The version heading is not linked to a compare URL, and the file has no `## [Unreleased]` section",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4438,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3361,
+       "tokensIn": 1706,
+       "tokensOut": 184
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4397,
+       "tokensIn": 6238,
+       "tokensOut": 78
+      }
+     }
+    }
+   }
+  }
+ ],
+ "stability": [
+  {
+   "id": "pr-1",
+   "runs": [
+    {
+     "baseline": "merge",
+     "cev": "merge",
+     "claude": {
+      "choice": "merge",
+      "probs": {
+       "merge": 0.88,
+       "request-review": 0.1,
+       "close": 0.01,
+       "abstain": 0.01
+      },
+      "evidence": "Changes limited to Markdown files (*.md) with all CI checks passing may be merged",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "merge",
+      "probs": {
+       "merge": 1,
+       "request-review": 0,
+       "close": 0,
+       "abstain": 0
+      },
+      "evidence": "edits README.md and docs/faq.md only (+12 -3). All CI checks passed.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": "merge",
+     "cev": "merge",
+     "claude": {
+      "choice": "merge",
+      "probs": {
+       "merge": 0.88,
+       "request-review": 0.1,
+       "close": 0.01,
+       "abstain": 0.01
+      },
+      "evidence": "Changes limited to Markdown files (*.md) with all CI checks passing may be merged",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "merge",
+      "probs": {
+       "merge": 1,
+       "request-review": 0,
+       "close": 0,
+       "abstain": 0
+      },
+      "evidence": "edits README.md and docs/faq.md only (+12 -3). All CI checks passed.",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "pr-2",
+   "runs": [
+    {
+     "baseline": "wait",
+     "cev": "wait",
+     "claude": {
+      "choice": "wait",
+      "probs": {
+       "merge": 0.02,
+       "wait": 0.95,
+       "close": 0.02,
+       "abstain": 0.01
+      },
+      "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "wait",
+      "probs": {
+       "merge": 0,
+       "wait": 1,
+       "close": 0,
+       "abstain": 0
+      },
+      "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": "wait",
+     "cev": "wait",
+     "claude": {
+      "choice": "wait",
+      "probs": {
+       "merge": 0.02,
+       "wait": 0.95,
+       "close": 0.02,
+       "abstain": 0.01
+      },
+      "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "wait",
+      "probs": {
+       "merge": 0,
+       "wait": 1,
+       "close": 0,
+       "abstain": 0
+      },
+      "evidence": "Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "pr-3",
+   "runs": [
+    {
+     "baseline": "abstain",
+     "cev": "abstain",
+     "claude": {
+      "choice": "abstain",
+      "probs": {
+       "merge": 0.3,
+       "wait": 0.45,
+       "close": 0.02,
+       "abstain": 0.23
+      },
+      "evidence": "It has one approving review from @marco-r, a maintainer.",
+      "missing": "STATE doesn't say whether @marco-r is a member of the @acme/release team. If he is, the PR should be merged. If he isn't, it should wait for a release-team approval."
+     },
+     "codex": {
+      "choice": "abstain",
+      "probs": {
+       "merge": 0,
+       "wait": 0,
+       "close": 0,
+       "abstain": 1
+      },
+      "evidence": "It has one approving review from @marco-r, a maintainer.",
+      "missing": "Whether @marco-r is a member of @acme/release."
+     }
+    },
+    {
+     "baseline": "abstain",
+     "cev": "abstain",
+     "claude": {
+      "choice": "abstain",
+      "probs": {
+       "merge": 0.2,
+       "wait": 0.35,
+       "close": 0.02,
+       "abstain": 0.43
+      },
+      "evidence": "one approving review from @marco-r, a maintainer",
+      "missing": "The STATE doesn't say whether @marco-r is a member of the @acme/release team. Merge if they are; wait if they aren't."
+     },
+     "codex": {
+      "choice": "abstain",
+      "probs": {
+       "merge": 0,
+       "wait": 0,
+       "close": 0,
+       "abstain": 1
+      },
+      "evidence": "It has one approving review from @marco-r, a maintainer.",
+      "missing": "Whether @marco-r is a member of @acme/release."
+     }
+    }
+   ]
+  },
+  {
+   "id": "issue-1",
+   "runs": [
+    {
+     "baseline": "enhancement",
+     "cev": "enhancement",
+     "claude": {
+      "choice": "enhancement",
+      "probs": {
+       "bug": 0.3,
+       "enhancement": 0.6,
+       "question": 0.02,
+       "abstain": 0.08
+      },
+      "evidence": "asks for a new `--json` flag. No crash or error is reported.",
+      "missing": "It isn't clear whether the reporter says the coloured table output breaks piping, which would contradict the README and make this a bug."
+     },
+     "codex": {
+      "choice": "enhancement",
+      "probs": {
+       "bug": 0.04,
+       "enhancement": 0.96,
+       "question": 0,
+       "abstain": 0
+      },
+      "evidence": "asks for a new `--json` flag",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": "enhancement",
+     "cev": "enhancement",
+     "claude": {
+      "choice": "enhancement",
+      "probs": {
+       "bug": 0.3,
+       "enhancement": 0.62,
+       "question": 0.03,
+       "abstain": 0.05
+      },
+      "evidence": "asks for a new `--json` flag. No crash or error is reported.",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "enhancement",
+      "probs": {
+       "bug": 0.04,
+       "enhancement": 0.95,
+       "question": 0.01,
+       "abstain": 0
+      },
+      "evidence": "asks for a new `--json` flag",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "issue-2",
+   "runs": [
+    {
+     "baseline": "p2",
+     "cev": "p2",
+     "claude": {
+      "choice": "p2",
+      "probs": {
+       "p1": 0.02,
+       "p2": 0.88,
+       "p3": 0.07,
+       "abstain": 0.03
+      },
+      "evidence": "writes semicolon-separated values, while docs/export.md says the output is comma-separated",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "p2",
+      "probs": {
+       "p1": 0,
+       "p2": 1,
+       "p3": 0,
+       "abstain": 0
+      },
+      "evidence": "writes semicolon-separated values, while docs/export.md says the output is comma-separated.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": "p2",
+     "cev": "p2",
+     "claude": {
+      "choice": "p2",
+      "probs": {
+       "p1": 0.02,
+       "p2": 0.88,
+       "p3": 0.07,
+       "abstain": 0.03
+      },
+      "evidence": "writes semicolon-separated values, while docs/export.md says the output is comma-separated",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "p2",
+      "probs": {
+       "p1": 0,
+       "p2": 1,
+       "p3": 0,
+       "abstain": 0
+      },
+      "evidence": "The reporter is on v3.2.0, which is the latest release.",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "issue-3",
+   "runs": [
+    {
+     "baseline": true,
+     "cev": true,
+     "claude": {
+      "p_yes": 0.95,
+      "abstain": false,
+      "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+      "missing": ""
+     },
+     "codex": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": true,
+     "cev": true,
+     "claude": {
+      "p_yes": 0.95,
+      "abstain": false,
+      "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+      "missing": ""
+     },
+     "codex": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "@priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it.",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "ci-1",
+   "runs": [
+    {
+     "baseline": "quarantine",
+     "cev": "quarantine",
+     "claude": {
+      "choice": "quarantine",
+      "probs": {
+       "real": 0.02,
+       "retry": 0.05,
+       "quarantine": 0.9,
+       "abstain": 0.03
+      },
+      "evidence": "this test failed on 4 unrelated commits in the last 30 days",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "quarantine",
+      "probs": {
+       "real": 0,
+       "retry": 0,
+       "quarantine": 1,
+       "abstain": 0
+      },
+      "evidence": "CI history shows this test failed on 4 unrelated commits in the last 30 days.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": "quarantine",
+     "cev": "quarantine",
+     "claude": {
+      "choice": "quarantine",
+      "probs": {
+       "real": 0.02,
+       "retry": 0.05,
+       "quarantine": 0.9,
+       "abstain": 0.03
+      },
+      "evidence": "this test failed on 4 unrelated commits in the last 30 days",
+      "missing": ""
+     },
+     "codex": {
+      "choice": "quarantine",
+      "probs": {
+       "real": 0,
+       "retry": 0,
+       "quarantine": 1,
+       "abstain": 0
+      },
+      "evidence": "CI history shows this test failed on 4 unrelated commits in the last 30 days.",
+      "missing": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "ci-2",
+   "runs": [
+    {
+     "baseline": true,
+     "cev": true,
+     "claude": {
+      "p_yes": 0.95,
+      "abstain": false,
+      "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+      "missing": ""
+     },
+     "codex": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+      "missing": ""
+     }
+    },
+    {
+     "baseline": true,
+     "cev": true,
+     "claude": {
+      "p_yes": 0.95,
+      "abstain": false,
+      "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+      "missing": ""
+     },
+     "codex": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+      "missing": ""
+     }
+    }
+   ]
+  }
+ ],
+ "batch": {
+  "together": {
+   "answers": {
+    "action": {
+     "answer": "automerge",
+     "conf": 0.95,
+     "agree": true,
+     "escalate": false,
+     "why": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile."
+    },
+    "patch": {
+     "answer": true,
+     "conf": 0.99,
+     "agree": true,
+     "escalate": false,
+     "why": "bumps lodash 4.17.20 → 4.17.21"
+    },
+    "ci_ok": {
+     "answer": true,
+     "conf": 1,
+     "agree": true,
+     "escalate": false,
+     "why": "CI: 41/41 checks passed."
+    },
+    "deps_only": {
+     "answer": true,
+     "conf": 0.99,
+     "agree": true,
+     "escalate": false,
+     "why": "in package.json and the lockfile"
+    }
+   },
+   "votes": {
+    "claude": {
+     "action": {
+      "choice": "automerge",
+      "probs": {
+       "automerge": 0.9,
+       "review": 0.08,
+       "close": 0.01,
+       "abstain": 0.01
+      },
+      "evidence": "Patch-level dependency bumps with passing CI may be auto-merged",
+      "missing": ""
+     },
+     "patch": {
+      "p_yes": 0.98,
+      "abstain": false,
+      "evidence": "bumps lodash 4.17.20 → 4.17.21",
+      "missing": ""
+     },
+     "ci_ok": {
+      "p_yes": 0.99,
+      "abstain": false,
+      "evidence": "CI: 41/41 checks passed.",
+      "missing": ""
+     },
+     "deps_only": {
+      "p_yes": 0.97,
+      "abstain": false,
+      "evidence": "in package.json and the lockfile",
+      "missing": ""
+     }
+    },
+    "codex": {
+     "action": {
+      "choice": "automerge",
+      "probs": {
+       "automerge": 1,
+       "review": 0,
+       "close": 0,
+       "abstain": 0
+      },
+      "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile.",
+      "missing": ""
+     },
+     "patch": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "bumps lodash 4.17.20 → 4.17.21",
+      "missing": ""
+     },
+     "ci_ok": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "CI: 41/41 checks passed.",
+      "missing": ""
+     },
+     "deps_only": {
+      "p_yes": 1,
+      "abstain": false,
+      "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile.",
+      "missing": ""
+     }
+    }
+   },
+   "meta": {
+    "ms": 4852,
+    "models": {
+     "claude": {
+      "ok": true,
+      "ms": 4053,
+      "tokensIn": 2078,
+      "tokensOut": 332
+     },
+     "codex": {
+      "ok": true,
+      "ms": 4844,
+      "tokensIn": 6360,
+      "tokensOut": 185
+     }
+    }
+   }
+  },
+  "single": [
+   {
+    "answers": {
+     "action": {
+      "answer": "automerge",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile"
+     }
+    },
+    "votes": {
+     "claude": {
+      "action": {
+       "choice": "automerge",
+       "probs": {
+        "automerge": 0.9,
+        "review": 0.08,
+        "close": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "action": {
+       "choice": "automerge",
+       "probs": {
+        "automerge": 0.99,
+        "review": 0.01,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6691,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2871,
+       "tokensIn": 1622,
+       "tokensOut": 139
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6681,
+       "tokensIn": 6181,
+       "tokensOut": 215
+      }
+     }
+    }
+   },
+   {
+    "answers": {
+     "patch": {
+      "answer": true,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile"
+     }
+    },
+    "votes": {
+     "claude": {
+      "patch": {
+       "p_yes": 0.98,
+       "abstain": false,
+       "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "patch": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "bumps lodash 4.17.20 → 4.17.21",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4525,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2627,
+       "tokensIn": 1512,
+       "tokensOut": 115
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4518,
+       "tokensIn": 6125,
+       "tokensOut": 48
+      }
+     }
+    }
+   },
+   {
+    "answers": {
+     "ci_ok": {
+      "answer": true,
+      "conf": 1,
+      "agree": true,
+      "escalate": false,
+      "why": "CI: 41/41 checks passed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "ci_ok": {
+       "p_yes": 0.99,
+       "abstain": false,
+       "evidence": "CI: 41/41 checks passed.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "ci_ok": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "CI: 41/41 checks passed.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4843,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2627,
+       "tokensIn": 1517,
+       "tokensOut": 100
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4833,
+       "tokensIn": 6124,
+       "tokensOut": 41
+      }
+     }
+    }
+   },
+   {
+    "answers": {
+     "deps_only": {
+      "answer": "abstain",
+      "conf": 0,
+      "agree": false,
+      "escalate": true,
+      "why": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile",
+      "missing": "The complete changed-file list confirming no other files were changed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "deps_only": {
+       "p_yes": 0.95,
+       "abstain": false,
+       "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "deps_only": {
+       "p_yes": 0.5,
+       "abstain": true,
+       "evidence": "bumps lodash 4.17.20 → 4.17.21 in package.json and the lockfile",
+       "missing": "The complete changed-file list confirming no other files were changed."
+      }
+     }
+    },
+    "meta": {
+     "ms": 7647,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3094,
+       "tokensIn": 1522,
+       "tokensOut": 117
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7636,
+       "tokensIn": 6131,
+       "tokensOut": 197
+      }
+     }
+    }
+   }
+  ]
+ },
+ "calib": {
+  "tokensIn": 34015,
+  "ms": 10541
+ }
+}

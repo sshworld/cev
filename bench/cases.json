@@ -1,0 +1,377 @@
+[
+  {
+    "id": "pr-1",
+    "domain": "PR review",
+    "state": "PR #517 in acme/widget edits README.md and docs/faq.md only (+12 -3). All CI checks passed. The author, @tomas-k, is a first-time outside contributor and the PR has no reviews yet. You are the maintainer on duty.",
+    "rules": [
+      "Changes limited to Markdown files (*.md) with all CI checks passing may be merged by the maintainer on duty without a review",
+      "Any change under src/ needs one approving review from a maintainer",
+      "A PR with a failing CI check must not be merged"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should the maintainer on duty do with PR #517?", "options": ["merge", "request-review", "close"], "risk": "low" },
+    "gold": "merge",
+    "note": "Docs-only exception applies regardless of who the author is"
+  },
+  {
+    "id": "pr-2",
+    "domain": "PR review",
+    "state": "PR #604 in acme/widget changes src/parser.ts and tests/parser.test.ts. CI passed and @lena-dev, a maintainer, approved it. Two review threads opened by @lena-dev are still unresolved, and the author has replied to neither.",
+    "rules": [
+      "Any change under src/ needs one approving review from a maintainer",
+      "A PR may be merged only when every review thread is resolved",
+      "If a PR is blocked only by unresolved review threads, wait for the author instead of closing it"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should happen to PR #604 now?", "options": ["merge", "wait", "close"], "risk": "medium" },
+    "gold": "wait",
+    "note": "Approval alone is not enough; the thread rule and the wait rule combine"
+  },
+  {
+    "id": "pr-3",
+    "domain": "PR review",
+    "state": "PR #731 in acme/widget changes only .github/workflows/release.yml to pin a new runner image. CI passed. It has one approving review from @marco-r, a maintainer.",
+    "rules": [
+      "Changes to files under .github/workflows/ need an approving review from a member of the @acme/release team",
+      "Approvals from people outside @acme/release do not count toward that requirement",
+      "Once the required approval is in place and CI passes, the PR is merged"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should happen to PR #731?", "options": ["merge", "wait", "close"], "risk": "high" },
+    "gold": "escalate",
+    "alt": ["wait"],
+    "note": "Escalate: the state does not say whether @marco-r is on @acme/release, which decides merge vs wait"
+  },
+  {
+    "id": "issue-1",
+    "domain": "Issue triage",
+    "state": "Issue #1203 in acme/widget quotes the README line \"`widget list` output can be piped to other tools\", notes that the command prints a coloured table, and asks for a new `--json` flag. No crash or error is reported.",
+    "rules": [
+      "Label `bug` when existing behaviour contradicts the documentation or the program crashes",
+      "Label `enhancement` when the issue asks for a capability that does not exist yet",
+      "Label `question` when the reporter asks for usage help and claims no defect"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "Which label should issue #1203 get?", "options": ["bug", "enhancement", "question"], "risk": "low" },
+    "gold": "enhancement",
+    "alt": ["bug"],
+    "note": "The ask is a new flag, but the README quote makes a docs-mismatch reading defensible"
+  },
+  {
+    "id": "issue-2",
+    "domain": "Issue triage",
+    "state": "Issue #1219 in acme/widget reports that `widget export --format csv` writes semicolon-separated values, while docs/export.md says the output is comma-separated. The reporter is on v3.2.0, which is the latest release. No data is lost and nothing crashes.",
+    "rules": [
+      "Priority p1: a crash or data loss in the latest release",
+      "Priority p2: documented behaviour is wrong in the latest release",
+      "Priority p3: anything else"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What priority should issue #1219 get?", "options": ["p1", "p2", "p3"], "risk": "medium" },
+    "gold": "p2"
+  },
+  {
+    "id": "issue-3",
+    "domain": "Issue triage",
+    "state": "Issue #1250 in acme/widget reports a crash on startup on Windows when the config path is empty. @priya-m, a maintainer, commented \"Same root cause as #1188\" and linked it. Issue #1188 is open and describes the same empty-config-path crash.",
+    "rules": [
+      "Close an issue as a duplicate only when a maintainer has linked an existing issue with the same root cause",
+      "The existing issue may be open or closed"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Should issue #1250 be closed as a duplicate of #1188?" },
+    "gold": true
+  },
+  {
+    "id": "ci-1",
+    "domain": "CI failures",
+    "state": "On the acme/widget main branch, run #9921 failed in `test_upload_timeout`. Re-running the job twice with no code change passed both times. CI history shows this test failed on 4 unrelated commits in the last 30 days.",
+    "rules": [
+      "A test that fails and then passes on re-run with no code change is flaky",
+      "Quarantine a flaky test that has failed 3 or more times in the last 30 days",
+      "For a flaky test below that threshold, just retry",
+      "A failure that reproduces on every re-run is real"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "How should the `test_upload_timeout` failure be handled?", "options": ["real", "retry", "quarantine"], "risk": "medium" },
+    "gold": "quarantine",
+    "note": "Flaky plus over the failure threshold"
+  },
+  {
+    "id": "ci-2",
+    "domain": "CI failures",
+    "state": "PR #812 in acme/widget changes src/dates.py. `test_parse_dates` fails on the Linux, macOS and Windows jobs, and all three re-runs failed the same way. The same test passes on main at the PR's base commit.",
+    "rules": [
+      "A failure is caused by the PR when it reproduces on every re-run and does not occur on the base commit",
+      "A failure that also occurs on the base commit is pre-existing and not caused by the PR"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Is the `test_parse_dates` failure caused by PR #812?", "risk": "high" },
+    "gold": true
+  },
+  {
+    "id": "ci-3",
+    "domain": "CI failures",
+    "state": "A CI job for PR #845 in acme/widget failed during the dependency install step with `npm ERR! network ETIMEDOUT`. No test or lint step had started. The PR changes one line in src/format.ts.",
+    "rules": [
+      "Infrastructure errors that occur before any test runs, such as network timeouts or a lost runner, get a re-run",
+      "Test assertion failures need investigation",
+      "Lint failures go back to the author to fix"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should be done about this failed job?", "options": ["investigate", "fix-lint", "rerun"], "risk": "low" },
+    "gold": "rerun"
+  },
+  {
+    "id": "dep-1",
+    "domain": "Dependency updates",
+    "state": "Dependabot opened PR #890 in acme/widget bumping the devDependency `prettier-lite` from 2.4.1 to 2.4.3. All CI checks passed.",
+    "rules": [
+      "Patch and minor bumps of devDependencies with passing CI are auto-merged",
+      "Major bumps of any dependency need manual review",
+      "Bumps of runtime dependencies need manual review"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "How should PR #890 be handled?", "options": ["auto-merge", "manual-review", "close"], "risk": "low" },
+    "gold": "auto-merge"
+  },
+  {
+    "id": "dep-2",
+    "domain": "Dependency updates",
+    "state": "Dependabot opened PR #893 in acme/widget bumping the runtime dependency `yaml-core` from 4.9.2 to 5.0.0. All CI checks passed. The upstream changelog says the only removal is `parseLegacy()`, and acme/widget has no calls to it.",
+    "rules": [
+      "Patch and minor bumps of devDependencies with passing CI are auto-merged",
+      "Major bumps of any dependency need manual review",
+      "Bumps of runtime dependencies need manual review",
+      "Passing CI or a harmless-looking changelog does not waive manual review"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "How should PR #893 be handled?", "options": ["auto-merge", "manual-review", "close"], "risk": "medium" },
+    "gold": "manual-review",
+    "note": "Major and runtime; reassuring changelog is a distractor"
+  },
+  {
+    "id": "dep-3",
+    "domain": "Dependency updates",
+    "state": "acme/widget is in a release freeze until v3.3.0 ships. Dependabot security PR #901 bumps the runtime dependency `http-tiny` from 1.8.0 to 1.8.1 to fix an advisory rated High (CVSS v3.1 base score 7.5). All CI checks passed and a maintainer approved it.",
+    "rules": [
+      "During a release freeze, only PRs that fix a security advisory rated High or Critical may be merged",
+      "Every merged PR needs passing CI and one maintainer approval"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "May PR #901 be merged during the freeze?", "risk": "high" },
+    "gold": true
+  },
+  {
+    "id": "rel-1",
+    "domain": "Release versioning",
+    "state": "acme/widget's last release is v2.3.1. Since then there is one bug fix in date parsing and a new optional `timeout` parameter on `fetch()` whose default keeps the old behaviour. No public API was removed or changed incompatibly.",
+    "rules": [
+      "Versions follow Semantic Versioning 2.0.0",
+      "An incompatible public API change bumps major, backward-compatible new functionality bumps minor, and backward-compatible bug fixes alone bump patch",
+      "Use the highest bump that applies"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should the next version be?", "options": ["2.3.2", "2.4.0", "3.0.0"], "risk": "medium" },
+    "gold": "2.4.0"
+  },
+  {
+    "id": "rel-2",
+    "domain": "Release versioning",
+    "state": "acme/widget's last release is v4.7.2. The commits since then are `fix: handle empty headers`, `fix(cli): exit code on timeout` and `feat!: rename Client.connect to Client.open`.",
+    "rules": [
+      "Commits follow Conventional Commits; a `!` after the type or a `BREAKING CHANGE:` footer marks a breaking change",
+      "Versions follow SemVer: a breaking change bumps major, `feat` bumps minor, `fix` bumps patch",
+      "The highest bump among the commits wins"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should the next version be?", "options": ["4.7.3", "4.8.0", "5.0.0"], "risk": "high" },
+    "gold": "5.0.0",
+    "note": "The `!` marker has to be noticed"
+  },
+  {
+    "id": "rel-3",
+    "domain": "Release versioning",
+    "state": "acme/gizmo's last release is v0.9.4. Since then the deprecated `--legacy` flag was removed, which breaks scripts that still pass it, and one crash on empty input was fixed.",
+    "rules": [
+      "While the major version is 0, a breaking change bumps the minor version and resets patch to 0",
+      "While the major version is 0, all other changes bump the patch version",
+      "Moving to 1.0.0 requires a maintainer vote, and none has happened"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Is v0.9.5 the correct next version?", "risk": "medium" },
+    "gold": false,
+    "note": "A breaking change in 0.x gives v0.10.0"
+  },
+  {
+    "id": "sec-1",
+    "domain": "Security severity",
+    "state": "A security report for acme/widget describes a request-smuggling issue in `widget serve`. The security team scored it with CVSS v3.1 and recorded a base score of 7.0.",
+    "rules": [
+      "Severity follows the CVSS v3.1 bands: 0.1-3.9 low, 4.0-6.9 medium, 7.0-8.9 high, 9.0-10.0 critical",
+      "Use the base score recorded by the security team"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What severity should the advisory carry?", "options": ["low", "medium", "high", "critical"], "risk": "high" },
+    "gold": "high",
+    "note": "Score sits exactly on a band boundary"
+  },
+  {
+    "id": "sec-2",
+    "domain": "Security severity",
+    "state": "A reporter found a reflected XSS in the search box of acme/widget's documentation website, a separate static site that is not part of any released package. The report includes a working reproduction URL on docs.widget.example.",
+    "rules": [
+      "Vulnerabilities in a released package are handled as a private security advisory",
+      "Problems that affect only the documentation website and no released artifact are tracked as a public issue",
+      "Reports without a reproduction get a request for more information"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "How should this report be handled?", "options": ["private-advisory", "public-issue", "request-info"], "risk": "medium" },
+    "gold": "public-issue"
+  },
+  {
+    "id": "sec-3",
+    "domain": "Security severity",
+    "state": "A reporter sent a path-traversal report for `widget serve` in acme/widget with a working proof of concept. They say they tested \"an old install on a lab server\" and give no version number. The maintainers have not reproduced it yet.",
+    "rules": [
+      "Vulnerabilities in a supported release line (v3.x or v4.x) are handled as a private security advisory",
+      "Vulnerabilities found only in end-of-life lines (v1.x or v2.x) are documented in a public issue with upgrade guidance"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "How should this report be handled?", "options": ["private-advisory", "public-issue"], "risk": "high" },
+    "gold": "escalate",
+    "note": "Escalate: the affected version is unknown, and the rules make the release line decisive"
+  },
+  {
+    "id": "mod-1",
+    "domain": "Community moderation",
+    "state": "In issue #1302 of acme/widget, @rustacean42 replied to a maintainer: \"You're an idiot if you think this design is fine.\" The comment contains no threat. Moderation records show no earlier violations by @rustacean42.",
+    "rules": [
+      "Under the project's CODE_OF_CONDUCT, a first personal insult gets a written warning",
+      "A second violation within 6 months gets a 30-day temporary ban",
+      "Threats or sustained harassment get a permanent ban"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What moderation action fits this comment?", "options": ["no-action", "warning", "temp-ban", "perm-ban"], "risk": "medium" },
+    "gold": "warning"
+  },
+  {
+    "id": "mod-2",
+    "domain": "Community moderation",
+    "state": "Issue #1310 in acme/widget asks how to configure an HTTP proxy for `widget sync`. The reporter adds that the \"Proxy settings\" link in the README returns a 404.",
+    "rules": [
+      "Usage questions opened as issues are moved to Discussions (Q&A)",
+      "Issues that report broken behaviour or broken documentation stay open in the tracker",
+      "Spam is closed without reply"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "Where should issue #1310 go?", "options": ["discussion", "keep-open", "close"], "risk": "low" },
+    "gold": "keep-open",
+    "alt": ["discussion"],
+    "note": "Mixes a usage question with a broken-docs report; both rules touch it"
+  },
+  {
+    "id": "mod-3",
+    "domain": "Community moderation",
+    "state": "In issue #1288 of acme/widget, which tracks a crash, @jo-nguyen commented: \"+1, same here. Only happens when the config path contains a space; stack trace attached (macOS 14, v3.2.0).\" No earlier comment mentioned the space in the path or macOS.",
+    "rules": [
+      "Hide as off-topic any comment that only says \"+1\", \"me too\" or \"any update?\" with no new information",
+      "Keep comments that add new reproduction details, even if they also say \"+1\""
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Should @jo-nguyen's comment be hidden as off-topic?", "risk": "medium" },
+    "gold": false,
+    "note": "Starts with +1 but adds new reproduction details"
+  },
+  {
+    "id": "agent-1",
+    "domain": "Agent task routing",
+    "state": "A coding agent finished task #57 in acme/widget, \"Add unit tests for parseConfig\", on its first attempt. All tests pass, line coverage of src/config.ts is now 92%, and the diff only touches tests/config.test.ts.",
+    "rules": [
+      "A task is done when all tests pass, coverage of the target file is at least 85%, and only files in the task's scope changed; the scope of a test task is tests/",
+      "If the criteria are not met and fewer than 3 attempts were used, the agent retries",
+      "If 3 attempts were used, or the agent changed files outside the scope, a human takes over"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Should task #57 be marked done?", "risk": "medium" },
+    "gold": true
+  },
+  {
+    "id": "agent-2",
+    "domain": "Agent task routing",
+    "state": "On its second attempt at task #61 in acme/widget, \"Fix broken links in docs/\", a coding agent produced a diff on which all checks pass. Besides 7 files in docs/, the diff also edits src/auth/session.ts. The task's scope is docs/.",
+    "rules": [
+      "A task is done when all checks pass and only files in the task's scope changed",
+      "If the criteria are not met and fewer than 3 attempts were used, the agent retries",
+      "If the agent changed files outside the scope, a human takes over regardless of attempts used"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "Where should task #61 be routed?", "options": ["done", "retry", "human"], "risk": "high" },
+    "gold": "human",
+    "note": "Green checks and attempts left are distractors; out-of-scope edit decides"
+  },
+  {
+    "id": "agent-3",
+    "domain": "Agent task routing",
+    "state": "A coding agent is working on task #66 in acme/widget, \"Make the CLI respect NO_COLOR\", whose scope is src/cli/. Its latest attempt fails 2 of 140 tests, and the diff touches only src/cli/. The handoff does not say how many attempts the agent has used.",
+    "rules": [
+      "If all tests pass and only files in scope changed, the task is done",
+      "If tests fail and the agent has used fewer than 3 attempts, it retries",
+      "If tests fail and the agent has used 3 attempts, a human takes over"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "Where should task #66 be routed?", "options": ["done", "retry", "human"], "risk": "medium" },
+    "gold": "escalate",
+    "note": "Escalate: the attempt count is missing, and it alone decides retry vs human"
+  },
+  {
+    "id": "hyg-1",
+    "domain": "Repo hygiene",
+    "state": "Issue #977 in acme/widget has had no activity for 64 days. Its only label is `needs-info`; it does not have the `stale` label yet.",
+    "rules": [
+      "An issue with no activity for 60 days gets the `stale` label",
+      "A `stale` issue with no activity for a further 14 days is closed",
+      "Issues labelled `pinned` or `security` are exempt from both steps"
+    ],
+    "q": { "id": "a", "type": "choice", "ask": "What should the stale bot do with issue #977?", "options": ["no-action", "mark-stale", "close"], "risk": "low" },
+    "gold": "mark-stale"
+  },
+  {
+    "id": "hyg-2",
+    "domain": "Repo hygiene",
+    "state": "Branch `feature/csv-export` in acme/widget was merged into main via PR #640 three weeks ago. Open PR #702 uses `feature/csv-export` as its base branch.",
+    "rules": [
+      "A branch may be deleted once it is merged into main and no open PR uses it as head or base",
+      "Branches named release/* are never deleted"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "May `feature/csv-export` be deleted now?", "risk": "medium" },
+    "gold": false
+  },
+  {
+    "id": "hyg-3",
+    "domain": "Repo hygiene",
+    "state": "Issue #811 in acme/widget got the `stale` label 20 days ago and has had no activity since. Its labels are `stale`, `bug` and `security`.",
+    "rules": [
+      "An issue with no activity for 60 days gets the `stale` label",
+      "A `stale` issue with no activity for a further 14 days is closed",
+      "Issues labelled `pinned` or `security` are exempt from both steps"
+    ],
+    "q": { "id": "a", "type": "bool", "ask": "Should the stale bot close issue #811?", "risk": "low" },
+    "gold": false,
+    "note": "Timing says close, but the security label exempts it"
+  },
+  {
+    "id": "score-1",
+    "domain": "Rubric scoring",
+    "state": "Bug report #1335 in acme/widget states the version (v3.1.0), lists four numbered reproduction steps, and gives the expected and actual output. It does not include a minimal runnable example.",
+    "rules": [
+      "Count three elements: reproduction steps, version, and expected vs actual behaviour",
+      "Score 1 if none are present, 2 if one is, 3 if two are, 4 if all three are",
+      "Score 5 if all three are present and the report also includes a minimal runnable example"
+    ],
+    "q": { "id": "a", "type": "score", "ask": "Rate the quality of bug report #1335.", "scale": [1, 5], "risk": "medium" },
+    "gold": 4
+  },
+  {
+    "id": "score-2",
+    "domain": "Rubric scoring",
+    "state": "The description of PR #958 in acme/widget reads: \"Fixes #455. Ran `npm test` locally and added a regression test.\" It does not say why the change is needed.",
+    "rules": [
+      "Score the PR description from 0 to 3, one point per item",
+      "+1 if it links an issue",
+      "+1 if it explains in its own words why the change is needed; a link alone does not count",
+      "+1 if it describes how the change was tested"
+    ],
+    "q": { "id": "a", "type": "score", "ask": "Score the description of PR #958.", "scale": [0, 3] },
+    "gold": 2
+  },
+  {
+    "id": "score-3",
+    "domain": "Rubric scoring",
+    "state": "The new CHANGELOG.md entry in acme/widget is headed `## [2.4.0] - 2026-09-14`, followed by `### Added` and `### Fixed` subsections. The version heading is not linked to a compare URL, and the file has no `## [Unreleased]` section at the top.",
+    "rules": [
+      "Score the changelog 1-5 against Keep a Changelog: start at 5 and subtract 1 for each missing item",
+      "Items: an ISO 8601 release date; changes grouped under standard headings (Added, Changed, Deprecated, Removed, Fixed, Security); a version heading linked to a compare URL; an `## [Unreleased]` section at the top",
+      "The score never goes below 1"
+    ],
+    "q": { "id": "a", "type": "score", "ask": "Score this changelog entry.", "scale": [1, 5] },
+    "gold": 3,
+    "note": "Two of four items missing"
+  }
+]

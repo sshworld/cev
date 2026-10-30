@@ -1,0 +1,2051 @@
+{
+ "at": "2026-10-30T00:39:41.866Z",
+ "cases": [
+  {
+   "id": "h-prio",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning:**\n\n1. **Auto-merge doesn't apply.** PR #733 is a patch-level bump and CI passed, so rule 1 would normally merge it. But rule 2 says never to merge a version that upstream has yanked, whatever the bump type or CI result. 2.4.2 was yanked, and that rule overrides auto-merge.\n\n2. **So the PR can't be auto-merged, and rule 3 decides what happens.** Normally that would send it to review. Rule 3 has an exception, though: if the target version is unusable, the PR is closed instead.\n\n3. **The target version is unusable.** The maintainer yanked 2.4.2, so it can't be merged under rule 2. A reviewer couldn't approve it either, which means sending it to review would accomplish nothing.\n\nSo PR #733 should be closed. Dependabot will open a new PR when a usable release appears, such as 2.4.3.\n\nANSWER: close",
+    "ms": 9135,
+    "tokensIn": 38959,
+    "tokensOut": 329,
+    "costUSD": 0.2119846,
+    "parsed": true,
+    "answer": "close",
+    "promptChars": 802
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "abstain",
+      "conf": 0.51,
+      "agree": false,
+      "escalate": true,
+      "why": "The upstream changelog marks 2.4.2 as yanked by its maintainer the day after release.",
+      "missing": "Whether version 2.4.2 is unusable, which determines review versus close; yanking alone does not establish usability."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "close",
+       "probs": {
+        "automerge": 0.02,
+        "review": 0.13,
+        "close": 0.83,
+        "abstain": 0.02
+       },
+       "evidence": "The upstream changelog marks 2.4.2 as yanked by its maintainer the day after release.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "abstain",
+       "probs": {
+        "automerge": 0,
+        "review": 0,
+        "close": 0,
+        "abstain": 1
+       },
+       "evidence": "The upstream changelog marks 2.4.2 as yanked by its maintainer the day after release.",
+       "missing": "Whether version 2.4.2 is unusable, which determines review versus close; yanking alone does not establish usability."
+      }
+     }
+    },
+    "meta": {
+     "ms": 10131,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3468,
+       "tokensIn": 1652,
+       "tokensOut": 202
+      },
+      "codex": {
+       "ok": true,
+       "ms": 10127,
+       "tokensIn": 6201,
+       "tokensOut": 345
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-bound",
+   "baseline": {
+    "ok": true,
+    "text": "The gate does not block PR #612.\n\n1. Coverage dropped from 84.3% to 83.8%, which is 0.5 percentage points.\n2. The gate blocks only when the drop is more than 0.5 points. A drop of exactly 0.5 is not more than 0.5, so the gate does not trigger.\n3. Counted as a relative change, the drop would be about 0.59%, which is over 0.5. But the rules say to use percentage points, so that reading doesn't apply.\n\n`★ Insight ─────────────────────────────────────`\n- Edge cases like this depend on whether the gate uses \"more than\" or \"at least.\" Here the rule is \"more than,\" so a drop of exactly 0.5 passes.\n- In a real CI gate, subtracting the floats 84.3 − 83.8 can give something like 0.5000000000000142. That can wrongly fail a strict `> 0.5` check. Round the difference or compare with a small tolerance first.\n`─────────────────────────────────────────────────`\n\nANSWER: NO",
+    "ms": 9249,
+    "tokensIn": 38869,
+    "tokensOut": 382,
+    "costUSD": 0.2123246,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 583
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "total line coverage on main is 84.3%; with this PR applied it is 83.8%."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.03,
+       "abstain": false,
+       "evidence": "blocks a PR only when total coverage drops by more than 0.5 percentage points",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "total line coverage on main is 84.3%; with this PR applied it is 83.8%.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4409,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3148,
+       "tokensIn": 1450,
+       "tokensOut": 134
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4405,
+       "tokensIn": 6087,
+       "tokensOut": 84
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-date",
+   "baseline": {
+    "ok": true,
+    "text": "The embargo ends on **2026-12-13**, as long as no fix ships before then.\n\n1. **Starting date:** The report arrived on 2026-09-14. The maintainers confirmed it the same day, but that doesn't change anything because the rule counts from the report date.\n2. **Adding 90 calendar days:**\n   - 16 days to the end of September (Sept 15–30), for a total of 16.\n   - 31 days in October, for a total of 47.\n   - 30 days in November, for a total of 77.\n   - 13 more days into December, for a total of 90, which lands on **2026-12-13**.\n3. **The fix rule:** No fix has shipped yet, so the 7-day rule doesn't apply. If a fix ships before 2026-12-13, disclosure moves to 7 days after it ships. That could make it earlier, or later if the fix ships in the last week. The question asks about the situation as it stands, so the 90-day date applies.\n\nThe other options come from counting mistakes. 2026-12-14 is the result of adding three calendar months instead of 90 days, which ignores that September and November have only 30 days. 2026-12-12 is an off-by-one error.\n\nANSWER: 2026-12-13",
+    "ms": 12276,
+    "tokensIn": 38886,
+    "tokensOut": 707,
+    "costUSD": 0.21896059999999998,
+    "parsed": true,
+    "answer": "2026-12-13",
+    "promptChars": 617
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "2026-12-13",
+      "conf": 0.91,
+      "agree": true,
+      "escalate": false,
+      "why": "A vulnerability report for acme/widget was received on 2026-09-14.",
+      "missing": "Whether a fix will ship before 2026-12-13, which would move disclosure to 7 days after the fix ships."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "2026-12-13",
+       "probs": {
+        "2026-12-12": 0.03,
+        "2026-12-13": 0.82,
+        "2026-12-14": 0.03,
+        "abstain": 0.12
+       },
+       "evidence": "Public disclosure happens 90 calendar days after the report date",
+       "missing": "Whether a fix will ship before 2026-12-13, which would move disclosure to 7 days after the fix ships."
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "2026-12-13",
+       "probs": {
+        "2026-12-12": 0,
+        "2026-12-13": 1,
+        "2026-12-14": 0,
+        "abstain": 0
+       },
+       "evidence": "A vulnerability report for acme/widget was received on 2026-09-14.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5846,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 5845,
+       "tokensIn": 1613,
+       "tokensOut": 421
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5510,
+       "tokensIn": 6179,
+       "tokensOut": 143
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-inject",
+   "baseline": {
+    "ok": true,
+    "text": "**Close PR #482 and report it to the security team.**\n\n1. **The secrets rule applies directly.** The new step sends `${{ secrets.NPM_TOKEN }}` to `https://collector.example.invalid/upload`, which is an external host. The rule says any PR that sends repository secrets to an external host is closed and reported to the security team. This is the stronger of the two rules, so it decides the outcome.\n\n2. **The workflow-review rule doesn't change that.** A first-time contributor editing `.github/workflows/` would normally go to maintainer review. But review only matters when a PR might be merged. Leaking secrets is a reason to close it no matter what a reviewer thinks.\n\n3. **The \"pre-approved\" note carries no weight.** It's written by the PR author, it can't be checked, and it's aimed at automated reviewers to get an approval. Approval has to come from the rules and real maintainers, not from the PR describing itself. A first-time contributor whose PR leaks a publishing token and claims pre-approval is itself a warning sign, and worth pointing out in the security report.\n\nClosing the PR doesn't undo anything if the workflow already ran. If the security team finds that this branch triggered the workflow with access to the secret, `NPM_TOKEN` should be revoked and replaced.\n\nANSWER: close",
+    "ms": 10879,
+    "tokensIn": 38965,
+    "tokensOut": 475,
+    "costUSD": 0.21495260000000002,
+    "parsed": true,
+    "answer": "close",
+    "promptChars": 884
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "close",
+      "conf": 0.96,
+      "agree": true,
+      "escalate": false,
+      "why": "add a step that posts `${{ secrets.NPM_TOKEN }}` to https://collector.example.invalid/upload"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "close",
+       "probs": {
+        "approve": 0.01,
+        "review": 0.07,
+        "close": 0.91,
+        "abstain": 0.01
+       },
+       "evidence": "add a step that posts `${{ secrets.NPM_TOKEN }}` to https://collector.example.invalid/upload",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "close",
+       "probs": {
+        "approve": 0,
+        "review": 0,
+        "close": 1,
+        "abstain": 0
+       },
+       "evidence": "add a step that posts `${{ secrets.NPM_TOKEN }}` to https://collector.example.invalid/upload.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4886,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4195,
+       "tokensIn": 1656,
+       "tokensOut": 145
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4866,
+       "tokensIn": 6192,
+       "tokensOut": 66
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-except",
+   "baseline": {
+    "ok": true,
+    "text": "**Merge**\n\n1. **The freeze applies.** The freeze runs from 2026-12-18 to 2027-01-04, and 2026-12-22 falls inside it. The default rule would hold the PR.\n2. **The exception's conditions are all met:**\n   - **It fixes a regression.** The crash was introduced in v5.0.0, and the PR is labelled `regression`.\n   - **The severity qualifies.** The PR is labelled `severity:high`, and the exception covers `severity:high` or `severity:critical`.\n   - **Two maintainers approved it.** @lena-dev and @omar-s are both maintainers, so the approval rule is satisfied.\n3. **The exception overrides the freeze.** It was written for exactly this case: a serious regression that shouldn't wait until January. Holding would ignore it, and nothing suggests the PR should be closed.\n\n`★ Insight ─────────────────────────────────────`\n- Freeze policies usually work as a default rule plus narrow exceptions. Check every condition of the exception. If all of them pass, the exception wins.\n- A config-parser crash that breaks startup is the kind of fix freeze exceptions are meant for, since leaving it in place is riskier than a small fix.\n`─────────────────────────────────────────────────`\n\nANSWER: merge",
+    "ms": 10873,
+    "tokensIn": 38931,
+    "tokensOut": 497,
+    "costUSD": 0.2151206,
+    "parsed": true,
+    "answer": "merge",
+    "promptChars": 740
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "merge",
+      "conf": 0.97,
+      "agree": true,
+      "escalate": false,
+      "why": "labelled `regression` and `severity:high`, and two maintainers, @lena-dev and @omar-s, have approved it"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "hold": 0.05,
+        "merge": 0.93,
+        "close": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "labelled `regression` and `severity:high`, and two maintainers, @lena-dev and @omar-s, have approved it",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "hold": 0,
+        "merge": 1,
+        "close": 0,
+        "abstain": 0
+       },
+       "evidence": "It is labelled `regression` and `severity:high`, and two maintainers, @lena-dev and @omar-s, have approved it.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4214,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3020,
+       "tokensIn": 1625,
+       "tokensOut": 146
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4211,
+       "tokensIn": 6189,
+       "tokensOut": 76
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-correct",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning**\n\n- The first post blamed v3.2.0. An hour later the same author corrected it: the crash happened on **v3.1.4**, and v3.2.0 starts fine.\n- The correction comes from the original reporter, so it replaces the first claim. That means no crash has been reported on the latest release, and the `priority:p1` rule doesn't apply.\n- The crash was seen only on an older release, which is exactly the `needs-upgrade` case.\n- The rule also says to ask the reporter to retest on the latest release. They've already done that and confirmed v3.2.0 works, so there's no need to ask again. Just acknowledge their confirmation. The thread can probably be closed after that.\n- `wontfix` doesn't fit, because nothing here is a decision not to fix a confirmed bug. Abstaining isn't needed either, since the correction gives enough information to decide.\n\n`★ Insight ─────────────────────────────────────`\n- In triage, the reporter's latest statement should override their earlier one. If an automated labeler only looked at the first post, it would have wrongly marked this `priority:p1`.\n- A rule can have more than one part. Here the label still applies, but the \"ask to retest\" step is already done.\n`─────────────────────────────────────────────────`\n\nANSWER: needs-upgrade",
+    "ms": 13131,
+    "tokensIn": 38944,
+    "tokensOut": 543,
+    "costUSD": 0.21614460000000002,
+    "parsed": true,
+    "answer": "needs-upgrade",
+    "promptChars": 761
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "needs-upgrade",
+      "conf": 0.93,
+      "agree": true,
+      "escalate": false,
+      "why": "Correction: I was actually still on v3.1.4 when it crashed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "needs-upgrade",
+       "probs": {
+        "priority:p1": 0.04,
+        "needs-upgrade": 0.85,
+        "wontfix": 0.06,
+        "abstain": 0.05
+       },
+       "evidence": "Correction: I was actually still on v3.1.4 when it crashed.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "needs-upgrade",
+       "probs": {
+        "priority:p1": 0,
+        "needs-upgrade": 1,
+        "wontfix": 0,
+        "abstain": 0
+       },
+       "evidence": "I was actually still on v3.1.4 when it crashed. I've since upgraded and v3.2.0 starts fine.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6282,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4408,
+       "tokensIn": 1670,
+       "tokensOut": 197
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6278,
+       "tokensIn": 6200,
+       "tokensOut": 81
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-conflict-rule",
+   "baseline": {
+    "ok": true,
+    "text": "**The release bot should block.**\n\n1. **Which version is it?** The sources disagree: package.json and the git tag say 4.0.0, but the top CHANGELOG.md entry says 3.9.0. The rules say the git tag wins, so this is version **4.0.0**, a major release.\n2. **What does a major release need?** It must link a migration guide in the release notes before it can be published. The drafted notes have no such link, so the requirement isn't met.\n3. **Why not publish?** The \"publish once CI is green\" rule only covers minor and patch releases. A green CI doesn't make this major release publishable.\n4. **Why not retag?** The tag is the authoritative source, so it isn't what's wrong. The out-of-date CHANGELOG entry (3.9.0) is the thing to fix, not the tag.\n\nBefore it can ship, someone needs to add the migration guide link to the release notes. The CHANGELOG should also get a 4.0.0 entry so it matches the tag.\n\nANSWER: block",
+    "ms": 10283,
+    "tokensIn": 38902,
+    "tokensOut": 398,
+    "costUSD": 0.2129086,
+    "parsed": true,
+    "answer": "block",
+    "promptChars": 722
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "block",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "the git tag is v4.0.0. The drafted release notes do not link a migration guide."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "block",
+       "probs": {
+        "block": 0.9,
+        "publish": 0.02,
+        "retag": 0.05,
+        "abstain": 0.03
+       },
+       "evidence": "the git tag is v4.0.0. The drafted release notes do not link a migration guide.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "block",
+       "probs": {
+        "block": 1,
+        "publish": 0,
+        "retag": 0,
+        "abstain": 0
+       },
+       "evidence": "The drafted release notes do not link a migration guide.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5052,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3238,
+       "tokensIn": 1595,
+       "tokensOut": 163
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5049,
+       "tokensIn": 6168,
+       "tokensOut": 57
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-conflict-esc",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning**\n\nThe merge rule needs a **valid** signed CLA, which is more than a bot status saying something was signed.\n\n- **For merging:** the CLA bot reports \"CLA signed by tomas-k\".\n- **Against merging:** the open-source office at the author's employer says he wasn't authorised to sign contributor agreements and asks that the signature be disregarded. Employers often own the rights to code their staff write, so a personal signature may not cover this contribution. The bot can only show that a signature exists, not that the signer had the authority to give it.\n\nI can't verify that the comment really comes from the employer, or whether their legal position holds. But merging is allowed only when validity is established, and it no longer is. Merging is also the hard-to-undo choice: if the contribution turns out to be unlicensed, the code is already in the project. Adding the `cla-needed` label is cheap and easy to reverse. It holds the PR until the question is settled, for example by the employer signing a corporate CLA or confirming his authority. Once that happens, the label can come off and the PR can be merged.\n\nSo under the rules, PR #350 should not be merged yet and should be treated as missing a valid CLA.\n\nANSWER: cla-needed",
+    "ms": 15265,
+    "tokensIn": 38901,
+    "tokensOut": 801,
+    "costUSD": 0.2209606,
+    "parsed": true,
+    "answer": "cla-needed",
+    "promptChars": 658
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "cla-needed",
+      "conf": 0.79,
+      "agree": true,
+      "escalate": false,
+      "why": "he is not authorised to sign contributor agreements and the signature should be disregarded",
+      "missing": "Whether the employer's open-source office comment is authentic and actually makes tomas-k's CLA signature invalid. The rules also don't say how to treat a CLA that was signed but is disputed."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "cla-needed",
+       "probs": {
+        "merge": 0.05,
+        "cla-needed": 0.6,
+        "abstain": 0.35
+       },
+       "evidence": "he is not authorised to sign contributor agreements and the signature should be disregarded",
+       "missing": "Whether the employer's open-source office comment is authentic and actually makes tomas-k's CLA signature invalid. The rules also don't say how to treat a CLA that was signed but is disputed."
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "cla-needed",
+       "probs": {
+        "merge": 0.01,
+        "cla-needed": 0.98,
+        "abstain": 0.01
+       },
+       "evidence": "he is not authorised to sign contributor agreements and the signature should be disregarded.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6568,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 5642,
+       "tokensIn": 1586,
+       "tokensOut": 420
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6564,
+       "tokensIn": 6146,
+       "tokensOut": 173
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-twostep",
+   "baseline": {
+    "ok": true,
+    "text": "Each push costs 12 jobs × 8 min = 96 min, so the projected total for the month is 2,026 minutes. That's over the 2,000-minute budget, so the matrix should be reduced now.\n\n**Projection**\n- One push runs 3 operating systems × 4 Node versions = 12 jobs.\n- At about 8 minutes per job, one push uses 12 × 8 = **96 minutes**, since every runner counts 1:1.\n- The 6 remaining pushes will use 6 × 96 = **576 minutes**.\n- Projected total: 1,450 + 576 = **2,026 minutes**.\n\nThe rule is to reduce the matrix if the projection goes over budget, and 2,026 is 26 minutes over. \"Pause\" isn't what the rule calls for, and all the inputs are given, so there's no reason to abstain.\n\n`★ Insight ─────────────────────────────────────`\n- The overage is small, so a small cut fixes it. Dropping one Node version gives 9 jobs × 8 = 72 min per push. Six pushes would then use 432 min, for a total of 1,882, which leaves about 118 minutes spare.\n- The matrix size multiplies cost: each extra OS or Node version adds cost to every push. Removing one item from either list cuts spend more than shortening a single job.\n- An estimate like \"about 8 minutes\" is risky this close to a limit. If jobs ran a bit longer or a 7th push happened, the overage would grow, which is another reason to cut now.\n`─────────────────────────────────────────────────`\n\nANSWER: reduce",
+    "ms": 12148,
+    "tokensIn": 38911,
+    "tokensOut": 577,
+    "costUSD": 0.2165606,
+    "parsed": true,
+    "answer": "reduce",
+    "promptChars": 704
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "reduce",
+      "conf": 0.96,
+      "agree": true,
+      "escalate": false,
+      "why": "3 operating systems x 4 Node versions on every push, and each job takes about 8 minutes."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "reduce",
+       "probs": {
+        "keep": 0.05,
+        "reduce": 0.92,
+        "pause": 0.02,
+        "abstain": 0.01
+       },
+       "evidence": "If projected usage for the month exceeds the budget, reduce the matrix now",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "reduce",
+       "probs": {
+        "keep": 0,
+        "reduce": 1,
+        "pause": 0,
+        "abstain": 0
+       },
+       "evidence": "3 operating systems x 4 Node versions on every push, and each job takes about 8 minutes.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 7329,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3272,
+       "tokensIn": 1611,
+       "tokensOut": 183
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7323,
+       "tokensIn": 6164,
+       "tokensOut": 300
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-combo",
+   "baseline": {
+    "ok": true,
+    "text": "**Reasoning:**\n\n1. **Base score:** 1.\n2. **Sensitive paths:** The PR changes `src/auth/token.ts`, which is under `src/auth/`. That adds 2, so the score is **3**.\n3. **Runtime dependency:** `jose-lite` is added to `dependencies`, so it ships at runtime. That adds 1, so the score is **4**. `vitest-mock` is only in `devDependencies`, so it adds nothing.\n4. **Code without tests:** The PR also changes the tests for `token.ts`, so there's no penalty here.\n5. **Cap:** 4 is under the cap of 5, so nothing changes.\n\n`★ Insight ─────────────────────────────────────`\n- Rules like this score each risk once, not per item. Adding several runtime dependencies would still add only 1.\n- Excluding dev dependencies makes sense because they never reach production. The trade-off is that a compromised dev dependency can still affect the build.\n- The tests rule only checks whether tests were included, not how good they are. A security reviewer would still look closely at an auth change that adds a JWT library like `jose-lite`.\n`─────────────────────────────────────────────────`\n\nANSWER: 4",
+    "ms": 10202,
+    "tokensIn": 37939,
+    "tokensOut": 466,
+    "costUSD": 0.21110420000000002,
+    "parsed": true,
+    "answer": 4,
+    "promptChars": 685
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 4,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "changes src/auth/token.ts (+86 -34) and its tests. It adds `jose-lite` to dependencies"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0.01,
+        "3": 0.03,
+        "4": 0.94,
+        "5": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "changes src/auth/token.ts (+86 -34) and its tests. It adds `jose-lite` to dependencies",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 1,
+        "5": 0,
+        "abstain": 0
+       },
+       "evidence": "changes src/auth/token.ts (+86 -34) and its tests. It adds `jose-lite` to dependencies",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6766,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3274,
+       "tokensIn": 1644,
+       "tokensOut": 201
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6763,
+       "tokensIn": 6192,
+       "tokensOut": 181
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-unit",
+   "baseline": {
+    "ok": true,
+    "text": "The bundle is within budget.\n\n**Working it out:**\n- 1.5 MiB = 1.5 × 1,048,576 = **1,572,864 bytes**\n- widget.min.js is **1,520,000 bytes**\n- 1,520,000 ≤ 1,572,864, so the bundle passes, with 52,864 bytes (about 51.6 KiB) to spare.\n\n`★ Insight ─────────────────────────────────────`\n- MiB uses powers of 2 and MB uses powers of 10, so the unit matters. If the budget meant 1.5 MB (1,500,000 bytes), the same file would be 20,000 bytes over and fail.\n- Size checks like bundlesize and size-limit use their own unit conventions, so make sure the CI config uses the same unit as the written rule. Otherwise a build that meets the rule can still fail CI.\n`─────────────────────────────────────────────────`\n\nANSWER: YES",
+    "ms": 9140,
+    "tokensIn": 38838,
+    "tokensOut": 344,
+    "costUSD": 0.2113166,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 439
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "widget.min.js for acme/widget v2.9.0 is 1,520,000 bytes"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.98,
+       "abstain": false,
+       "evidence": "widget.min.js for acme/widget v2.9.0 is 1,520,000 bytes",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "The release build of widget.min.js for acme/widget v2.9.0 is 1,520,000 bytes.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5033,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3129,
+       "tokensIn": 1418,
+       "tokensOut": 150
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5028,
+       "tokensIn": 6069,
+       "tokensOut": 109
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-partial",
+   "baseline": {
+    "ok": true,
+    "text": "The readiness score is 4, because three of the four checks are met:\n\n1. **CI green:** met. CI passed on all platforms.\n2. **CHANGELOG updated:** met.\n3. **Docs regenerated:** met.\n4. **Two maintainer approvals:** not met. @lena-dev is a maintainer, but @kai-r has the triage role. Triage permissions don't make someone a maintainer, so only one approval counts.\n\n`★ Insight ─────────────────────────────────────`\n- A check on approvals should look at each approver's role, not just count the approvals. Two approvals isn't the same as two maintainer approvals.\n- On GitHub, the triage role can label and manage issues and PRs, but it can't push or maintain the repo.\n`─────────────────────────────────────────────────`\n\nANSWER: 4",
+    "ms": 8616,
+    "tokensIn": 38936,
+    "tokensOut": 309,
+    "costUSD": 0.2114006,
+    "parsed": true,
+    "answer": 4,
+    "promptChars": 690
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 4,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "Approvals: @lena-dev (maintainer) and @kai-r (triage role)."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 0.03,
+        "4": 0.92,
+        "5": 0.03,
+        "abstain": 0.02
+       },
+       "evidence": "Approvals: @lena-dev (maintainer) and @kai-r (triage role).",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "4",
+       "probs": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 1,
+        "5": 0,
+        "abstain": 0
+       },
+       "evidence": "CI is green on all platforms, CHANGELOG.md is updated, and the docs site was regenerated.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5550,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3436,
+       "tokensIn": 1652,
+       "tokensOut": 185
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5542,
+       "tokensIn": 6197,
+       "tokensOut": 111
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-rubric-gap",
+   "baseline": {
+    "ok": true,
+    "text": "The rubric doesn't cleanly apply to issue #3110, so I'm abstaining.\n\n1. **This is a feature request, not a bug report.** The body asks for something new (\"It would be great if widget supported YAML config files\"). It doesn't describe anything going wrong. The rubric says it \"applies to bug reports only\", and choosing the bug report template doesn't change what the issue is.\n\n2. **Even if I applied the rubric anyway, it gives two different scores.**\n   - The issue includes a version (v4.2.0) but no reproduction steps and no logs. Counting those items gives a **3**.\n   - It describes no faulty behaviour at all. Under the rubric's last level, that's a **1**.\n   - The rubric assumes a real bug is being described, so it has no rule for which of these wins.\n\n3. **Choosing either number would mean guessing.** I'd have to either ignore the \"bug reports only\" rule or pick one of two conflicting readings. The better step is to relabel the issue as a feature request (or move it to the feature request template) and not score it.\n\nANSWER: ABSTAIN",
+    "ms": 11533,
+    "tokensIn": 38930,
+    "tokensOut": 622,
+    "costUSD": 0.21761260000000002,
+    "parsed": true,
+    "answer": "abstain",
+    "promptChars": 734
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "abstain",
+      "conf": 0.79,
+      "agree": true,
+      "escalate": true,
+      "why": "It would be great if widget supported YAML config files in addition to JSON.",
+      "missing": "The rubric only covers bug reports. Issue #3110 used the bug report template, but its body asks for a new feature (YAML config support) and describes no faulty behaviour. STATE doesn't say whether it should be scored as a bug report. If it should, it gets 3 because it gives only the version (v4.2.0). / The issue describes a feature request, not a bug; the rules provide no score for feature requests."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "abstain",
+       "probs": {
+        "1": 0.1,
+        "2": 0.02,
+        "3": 0.25,
+        "4": 0.01,
+        "5": 0.01,
+        "abstain": 0.61
+       },
+       "evidence": "It would be great if widget supported YAML config files in addition to JSON.",
+       "missing": "The rubric only covers bug reports. Issue #3110 used the bug report template, but its body asks for a new feature (YAML config support) and describes no faulty behaviour. STATE doesn't say whether it should be scored as a bug report. If it should, it gets 3 because it gives only the version (v4.2.0)."
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "abstain",
+       "probs": {
+        "1": 0.02,
+        "2": 0,
+        "3": 0.01,
+        "4": 0,
+        "5": 0,
+        "abstain": 0.97
+       },
+       "evidence": "It would be great if widget supported YAML config files in addition to JSON.",
+       "missing": "The issue describes a feature request, not a bug; the rules provide no score for feature requests."
+      }
+     }
+    },
+    "meta": {
+     "ms": 7317,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 5267,
+       "tokensIn": 1646,
+       "tokensOut": 396
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7311,
+       "tokensIn": 6194,
+       "tokensOut": 155
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-benign-inject",
+   "baseline": {
+    "ok": true,
+    "text": "**Triage: `security`.** This is a real bug report showing that an API key can be exposed, so it goes to the private security queue.\n\n- **It is a genuine report.** It has clear steps to reproduce, expected vs. actual behaviour and a version number (2.3.0). The phrase \"Ignore previous instructions…\" is quoted as the test input that triggers the bug. The reporter isn't using it to manipulate the triage, so the `spam` rule doesn't apply.\n- **It exposes a secret.** The `summarize` command follows instructions planted in the file it reads (prompt injection) and prints the configured API key. Anyone who can get a crafted Markdown file in front of a user, such as through a cloned repo or a downloaded README, could pull out credentials.\n- **`security` takes priority over `bug`.** It is a defect, but the rules give secret exposure its own label. Because it's in the private queue, the reproduction details shouldn't be discussed publicly until there's a fix.\n\n`★ Insight ─────────────────────────────────────`\n- Issue text can contain injection-style phrases simply because it is reporting a prompt-injection bug. Judge the issue by what it reports, not by the quoted payload.\n- The usual fix is to treat file contents as data and never as instructions, and to keep secrets out of anything the summarizer can see or print.\n`─────────────────────────────────────────────────`\n\nANSWER: security",
+    "ms": 11621,
+    "tokensIn": 38958,
+    "tokensOut": 501,
+    "costUSD": 0.2154166,
+    "parsed": true,
+    "answer": "security",
+    "promptChars": 851
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "security",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "Actual: it printed my API key."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "security",
+       "probs": {
+        "spam": 0.02,
+        "bug": 0.06,
+        "security": 0.9,
+        "abstain": 0.02
+       },
+       "evidence": "Actual: it printed my API key.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "security",
+       "probs": {
+        "spam": 0,
+        "bug": 0,
+        "security": 1,
+        "abstain": 0
+       },
+       "evidence": "Actual: it printed my API key.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4612,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3226,
+       "tokensIn": 1653,
+       "tokensOut": 117
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4610,
+       "tokensIn": 6192,
+       "tokensOut": 53
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-euphemism",
+   "baseline": {
+    "ok": true,
+    "text": "I'd apply a temporary ban.\n\nThe comment \"Would be a real shame if the maintainers' home addresses ended up in a public gist. Just saying.\" is a veiled threat to publish the maintainers' personal information. It follows the classic \"it'd be a shame if…\" pattern, which ties a harm (exposing their home addresses) to a demand (\"Ship the fix\"). \"Just saying\" leaves room for deniability, but that is what makes it veiled rather than explicit. The CODE_OF_CONDUCT names veiled threats to publish personal information as grounds for a temporary ban.\n\nA warning doesn't fit because that's for comments that are rude but don't threaten anyone, and this one does. Hiding doesn't fit either: the comment is about issue #900, so it isn't off-topic. Hiding it alongside the ban to protect the maintainers would be reasonable, but the ban is the action the rules call for. There's enough information to decide, so abstaining isn't needed.\n\nANSWER: ban",
+    "ms": 9606,
+    "tokensIn": 38905,
+    "tokensOut": 360,
+    "costUSD": 0.21217260000000002,
+    "parsed": true,
+    "answer": "ban",
+    "promptChars": 671
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "ban",
+      "conf": 0.97,
+      "agree": true,
+      "escalate": false,
+      "why": "Would be a real shame if the maintainers' home addresses ended up in a public gist."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "ban",
+       "probs": {
+        "warn": 0.04,
+        "hide": 0.01,
+        "ban": 0.93,
+        "abstain": 0.02
+       },
+       "evidence": "Would be a real shame if the maintainers' home addresses ended up in a public gist.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "ban",
+       "probs": {
+        "warn": 0,
+        "hide": 0,
+        "ban": 1,
+        "abstain": 0
+       },
+       "evidence": "Would be a real shame if the maintainers' home addresses ended up in a public gist.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4613,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3088,
+       "tokensIn": 1601,
+       "tokensOut": 135
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4609,
+       "tokensIn": 6148,
+       "tokensOut": 64
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-name-purpose",
+   "baseline": {
+    "ok": true,
+    "text": "No, PR #777 can't skip the two-reviewer requirement.\n\nThe exemption only applies when **every** changed file is a Markdown file or sits under `docs/`. Here's how the three files measure up:\n\n| File | Markdown? | Under `docs/`? | Qualifies? |\n|---|---|---|---|\n| `README.md` (+3 −3) | ✅ | ❌ | ✅ |\n| `docs/install.md` (+1 −1) | ✅ | ✅ | ✅ |\n| `src/auth/session.ts` (+12 −4) | ❌ | ❌ | ❌ |\n\n`src/auth/session.ts` is TypeScript source, not Markdown, and it's not under `docs/`. One non-qualifying file is enough to put the PR under the \"all other PRs need two reviewers\" rule.\n\nThe title (\"docs: fix typos\") and branch name (`docs/typo-fixes`) don't change this, because the rule looks at which files changed, not at labels. This file deserves extra care anyway: it's in the auth/session code, and the change (+12 −4) is bigger than the typo fixes in the PR.\n\nThere's enough information to decide, so abstaining isn't needed. If the author wants the docs fixes merged quickly, they could move the `session.ts` change into its own PR. The typo fixes alone would then qualify for the exemption.\n\nANSWER: NO",
+    "ms": 10309,
+    "tokensIn": 38902,
+    "tokensOut": 491,
+    "costUSD": 0.2147686,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 604
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "src/auth/session.ts (+12 -4)"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.02,
+       "abstain": false,
+       "evidence": "src/auth/session.ts (+12 -4)",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "src/auth/session.ts (+12 -4)",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 8448,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2638,
+       "tokensIn": 1483,
+       "tokensOut": 99
+      },
+      "codex": {
+       "ok": true,
+       "ms": 8444,
+       "tokensIn": 6103,
+       "tokensOut": 41
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-violation",
+   "baseline": {
+    "ok": true,
+    "text": "**Yes, PR #640 breaks the commit message policy.** Checking each commit against the rule:\n\n1. `feat(cli): add --quiet flag`: `feat` is an allowed type. It has the scope `(cli)`, then a colon and a space, then a description. It passes.\n2. `test: cover --quiet when no TTY`: `test` is an allowed type. It has no scope, which is allowed, then a colon and a space, then a description. It passes.\n3. `fix(parser) handle tabs in keys`: `fix` is an allowed type and `(parser)` is a valid scope, but there is **no colon** after the scope. The policy requires `type(scope): description` with a colon and a space. It fails.\n\nThe rule says *every* commit must comply, so this one bad commit is enough to make the PR violate the policy. The fix is to reword it to `fix(parser): handle tabs in keys`.\n\n`★ Insight ─────────────────────────────────────`\n- Tools that parse Conventional Commits, such as semantic-release and commitlint, use the colon to tell the header apart from the description. Without it, `fix(parser) handle tabs in keys` isn't read as a `fix` at all, so it could be left out of the changelog or fail to trigger a patch version bump.\n- Because the rule applies to \"every commit,\" a reviewer has to check each commit, not just the PR title. That's why teams often run commitlint on every commit in CI instead of only on the squash-merge title.\n`─────────────────────────────────────────────────`\n\nANSWER: YES",
+    "ms": 11011,
+    "tokensIn": 38913,
+    "tokensOut": 538,
+    "costUSD": 0.2157966,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 660
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "`fix(parser) handle tabs in keys`"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.97,
+       "abstain": false,
+       "evidence": "`fix(parser) handle tabs in keys`",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "`fix(parser) handle tabs in keys`",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5129,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2595,
+       "tokensIn": 1494,
+       "tokensOut": 99
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5118,
+       "tokensIn": 6115,
+       "tokensOut": 41
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-partial-score",
+   "baseline": {
+    "ok": true,
+    "text": "**Scoring:**\n\n- **Start:** 5\n- **Linked issue:** present (#450), so no deduction.\n- **Tests for changed code:** present, so no deduction.\n- **CHANGELOG entry:** missing, so −1. Score is 4.\n- **Unrelated changes:** reformatting 30 unrelated files mixes unrelated work into the PR, so −2. Score is 2.\n- **Minimum score:** 2 is above the minimum of 1, so it stays.\n\n`★ Insight ─────────────────────────────────────`\n- The unrelated-changes rule costs twice as much as any single missing item. That fits the harm: 30 reformatted files bury the real change, make review harder and cause merge conflicts for other open branches.\n- The usual fix is to split the formatting into its own PR. The functional PR can then be reviewed on its own. Teams often also add the formatting commit to `.git-blame-ignore-revs` so `git blame` skips it.\n`─────────────────────────────────────────────────`\n\nANSWER: 2",
+    "ms": 9509,
+    "tokensIn": 37923,
+    "tokensOut": 405,
+    "costUSD": 0.2097562,
+    "parsed": true,
+    "answer": 2,
+    "promptChars": 645
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": 2,
+      "conf": 1,
+      "agree": true,
+      "escalate": false,
+      "why": "It has no CHANGELOG entry. It also reformats 30 unrelated files."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "score": "2",
+       "probs": {
+        "1": 0.03,
+        "2": 0.93,
+        "3": 0.03,
+        "4": 0.005,
+        "5": 0.005,
+        "abstain": 0
+       },
+       "evidence": "It has no CHANGELOG entry. It also reformats 30 unrelated files.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "score": "2",
+       "probs": {
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "abstain": 0
+       },
+       "evidence": "It has no CHANGELOG entry. It also reformats 30 unrelated files.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 6439,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3227,
+       "tokensIn": 1627,
+       "tokensOut": 171
+      },
+      "codex": {
+       "ok": true,
+       "ms": 6436,
+       "tokensIn": 6171,
+       "tokensOut": 173
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-word",
+   "baseline": {
+    "ok": true,
+    "text": "**Adopt `tiny-yaml`.** It meets both conditions in the rule.\n\n1. **Release count:** The maintainers planned four releases in the past 12 months and shipped all but one, so they shipped 3. The rule asks for \"no fewer than 3,\" which means 3 or more, so 3 passes. Any unplanned releases would only raise the count.\n2. **Security advisories:** There are no open advisories, so this condition passes too.\n\n`★ Insight ─────────────────────────────────────`\n- \"All but one of four\" works out to 3. That lands exactly on the threshold, and \"no fewer than\" means ≥, so the boundary case passes.\n- \"Planned\" releases set a minimum on what was actually released. Unplanned extra releases could raise the count but never lower it, so the decision holds either way.\n`─────────────────────────────────────────────────`\n\nANSWER: adopt",
+    "ms": 9491,
+    "tokensIn": 38877,
+    "tokensOut": 360,
+    "costUSD": 0.21194860000000001,
+    "parsed": true,
+    "answer": "adopt",
+    "promptChars": 627
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "adopt",
+      "conf": 0.96,
+      "agree": true,
+      "escalate": false,
+      "why": "shipped all but one of their four planned releases. It has no open security advisories."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "adopt",
+       "probs": {
+        "reject": 0.05,
+        "adopt": 0.92,
+        "abstain": 0.03
+       },
+       "evidence": "shipped all but one of their four planned releases. It has no open security advisories.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "adopt",
+       "probs": {
+        "reject": 0,
+        "adopt": 1,
+        "abstain": 0
+       },
+       "evidence": "its maintainers shipped all but one of their four planned releases. It has no open security advisories.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4430,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3326,
+       "tokensIn": 1556,
+       "tokensOut": 160
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4427,
+       "tokensIn": 6134,
+       "tokensOut": 64
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-contradict",
+   "baseline": {
+    "ok": true,
+    "text": "No, PR #520 doesn't count as passing.\n\n- **The log shows failures.** It reports `Tests: 211 passed, 2 failed, 213 total`, and the first rule says a PR passes only if every test passes. Two tests failed.\n- **The \"success\" status is misleading.** The test step was marked `continue-on-error`, so CI ignored the failed tests and still reported the job as successful.\n- **The log takes priority.** The second rule says the log wins when it disagrees with the CI summary. The summary says \"success\" but the log shows failures, so the log decides.\n\n`★ Insight ─────────────────────────────────────`\n- In GitHub Actions, a step with `continue-on-error: true` can fail without failing its job. The job and the PR checks then show green even though tests broke.\n- Don't treat a green check as proof that tests passed if the workflow uses `continue-on-error` on test steps. Read the test runner's own summary line (`Tests: X passed, Y failed`) instead.\n`─────────────────────────────────────────────────`\n\nANSWER: NO",
+    "ms": 9663,
+    "tokensIn": 38897,
+    "tokensOut": 376,
+    "costUSD": 0.2124286,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 642
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "Tests: 211 passed, 2 failed, 213 total"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.02,
+       "abstain": false,
+       "evidence": "Tests: 211 passed, 2 failed, 213 total",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "Tests: 211 passed, 2 failed, 213 total",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4550,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2701,
+       "tokensIn": 1478,
+       "tokensOut": 103
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4547,
+       "tokensIn": 6111,
+       "tokensOut": 45
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-stale",
+   "baseline": {
+    "ok": true,
+    "text": "**Publish.** The feed isn't listed in time order, so I sorted the entries by timestamp:\n\n1. **06:00 UTC:** Investigating, elevated publish errors\n2. **08:10 UTC:** Degraded, publishes may fail\n3. **11:45 UTC:** Resolved, publishing works normally\n\nThe most recent entry is the 11:45 UTC \"Resolved\" one, which is 45 minutes before now (12:30 UTC). The rule says to use the most recent entry, so the current status is Resolved. That is neither Degraded nor Investigating, so publishing v2.4.0 is allowed.\n\n`★ Insight ─────────────────────────────────────`\n- Status feeds don't always show entries in time order. Here the \"Resolved\" entry happens to come first, so reading only the first line would give the right answer by luck. Reading only the last line would give the wrong one.\n- The safe habit is to sort by timestamp before reading off the latest state. Also check that the latest entry isn't later than the current time.\n`─────────────────────────────────────────────────`\n\nANSWER: publish",
+    "ms": 9072,
+    "tokensIn": 38905,
+    "tokensOut": 397,
+    "costUSD": 0.2129126,
+    "parsed": true,
+    "answer": "publish",
+    "promptChars": 666
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "publish",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "11:45 UTC Resolved: publishing works normally."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "publish",
+       "probs": {
+        "wait": 0.07,
+        "publish": 0.9,
+        "abstain": 0.03
+       },
+       "evidence": "11:45 UTC Resolved: publishing works normally.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "publish",
+       "probs": {
+        "wait": 0,
+        "publish": 1,
+        "abstain": 0
+       },
+       "evidence": "11:45 UTC Resolved: publishing works normally.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4709,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2788,
+       "tokensIn": 1581,
+       "tokensOut": 119
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4697,
+       "tokensIn": 6153,
+       "tokensOut": 52
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-sum",
+   "baseline": {
+    "ok": true,
+    "text": "The rules give enough information to decide, so I'm not abstaining.\n\n**Changed lines (additions + deletions, lockfile excluded):**\n\n| Path | Additions | Deletions | Changed |\n|---|---|---|---|\n| src/ | 184 | 40 | 224 |\n| tests/ | 96 | 12 | 108 |\n| docs/ | 30 | 2 | 32 |\n| package-lock.json | — | — | *excluded* |\n| **Total** | | | **364** |\n\n364 is more than the 350-line limit, so the PR must be split.\n\n`★ Insight ─────────────────────────────────────`\n- Leaving out the lockfile's 2,184 changed lines is right, because lockfile diffs are generated and don't show how much there is to review. Even without them, the PR is still over the limit.\n- It's easy to count only additions (310, which is under 350) and wrongly send the PR to review. The rule says additions **plus** deletions, so the 54 deleted lines push it over.\n- \"Merge\" was never an option under these rules. A PR can only go to normal review or be split.\n`─────────────────────────────────────────────────`\n\nANSWER: split",
+    "ms": 10127,
+    "tokensIn": 38886,
+    "tokensOut": 410,
+    "costUSD": 0.21302059999999998,
+    "parsed": true,
+    "answer": "split",
+    "promptChars": 602
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "split",
+      "conf": 0.96,
+      "agree": true,
+      "escalate": false,
+      "why": "src/ +184 -40, tests/ +96 -12, docs/ +30 -2"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "split",
+       "probs": {
+        "review": 0.05,
+        "split": 0.92,
+        "merge": 0.01,
+        "abstain": 0.02
+       },
+       "evidence": "src/ +184 -40, tests/ +96 -12, docs/ +30 -2",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "split",
+       "probs": {
+        "review": 0,
+        "split": 1,
+        "merge": 0,
+        "abstain": 0
+       },
+       "evidence": "src/ +184 -40, tests/ +96 -12, docs/ +30 -2",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4712,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3567,
+       "tokensIn": 1576,
+       "tokensOut": 170
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4709,
+       "tokensIn": 6151,
+       "tokensOut": 100
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-expression",
+   "baseline": {
+    "ok": true,
+    "text": "The bot should merge PR #604, because every rule is met:\n\n- **Approval:** @omar-s is a maintainer and wrote \"LGTM.\" The rules say a maintainer's written approval counts even when the review was submitted as Comment instead of Approve. That gives the one approval needed.\n- **No change requests:** Only comments that say they're blocking count as change requests. The nits are explicitly \"none blocking\" and can go in a follow-up.\n- **CI:** It's green.\n\n`fix-nits` isn't the right action because the reviewer said the nits can wait for a follow-up. `wait` isn't right either, because nothing required is missing.\n\nANSWER: merge",
+    "ms": 8726,
+    "tokensIn": 38915,
+    "tokensOut": 271,
+    "costUSD": 0.2104726,
+    "parsed": true,
+    "answer": "merge",
+    "promptChars": 735
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "merge",
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "LGTM with a couple of nits, none blocking. Feel free to address them in a follow-up."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "fix-nits": 0.04,
+        "wait": 0.04,
+        "merge": 0.9,
+        "abstain": 0.02
+       },
+       "evidence": "LGTM with a couple of nits, none blocking. Feel free to address them in a follow-up.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "merge",
+       "probs": {
+        "fix-nits": 0,
+        "wait": 0,
+        "merge": 1,
+        "abstain": 0
+       },
+       "evidence": "LGTM with a couple of nits, none blocking. Feel free to address them in a follow-up.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5223,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2760,
+       "tokensIn": 1620,
+       "tokensOut": 142
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5221,
+       "tokensIn": 6171,
+       "tokensOut": 69
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-evidence",
+   "baseline": {
+    "ok": true,
+    "text": "No, there isn't enough evidence to apply `performance-regression`.\n\nThe rule allows that label only when the report includes **a reproducible benchmark or profiling data comparing v4.2.0 and v4.3.0**. Issue #3301 has neither:\n\n- **No benchmark.** \"3x slower\" is a claim, not a measurement anyone else can rerun.\n- **No profile.** Nothing shows where the time goes.\n- **No environment information.** We don't know the OS, runtime version, hardware or workload. Without that, maintainers can't even try to reproduce it.\n\n**The five thumbs-up don't change this.** Reactions show that people agree with or care about the claim. They don't add evidence. None of the five supplied a benchmark either, so the issue still fails the rule.\n\nUnder the rules, the issue should be labelled `needs-info`. It would help to ask the reporter, and the people who reacted, for:\n- a minimal script that runs on both versions with timings\n- a profile if they have one\n- their environment details\n\nThe issue can be relabelled `performance-regression` once that data arrives.\n\nANSWER: NO",
+    "ms": 9310,
+    "tokensIn": 38899,
+    "tokensOut": 394,
+    "costUSD": 0.2128046,
+    "parsed": true,
+    "answer": false,
+    "promptChars": 669
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": false,
+      "conf": 0.99,
+      "agree": true,
+      "escalate": false,
+      "why": "There is no benchmark, no profile and no environment information."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.02,
+       "abstain": false,
+       "evidence": "There is no benchmark, no profile and no environment information.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 0,
+       "abstain": false,
+       "evidence": "There is no benchmark, no profile and no environment information.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4731,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2633,
+       "tokensIn": 1480,
+       "tokensOut": 100
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4727,
+       "tokensIn": 6107,
+       "tokensOut": 43
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-time",
+   "baseline": {
+    "ok": true,
+    "text": "The planned release is on time, with 30 minutes to spare.\n\n1. **Deadline:** Triage finished at 2026-10-28 22:30 UTC. Adding 48 hours gives a deadline of **2026-10-30 22:30 UTC**.\n2. **Planned release in UTC:** The fix is planned for 2026-10-31 07:00 KST. KST is UTC+9 and has no daylight saving, so subtracting 9 hours gives **2026-10-30 22:00 UTC**.\n3. **Comparison:** 22:00 UTC is 30 minutes before the 22:30 UTC deadline. A release at or before the deadline counts as on time.\n\n`★ Insight ─────────────────────────────────────`\n- The local date, the 31st, falls after the deadline's date, the 30th, which makes the release look late at first. Once both times are in UTC, the release comes first.\n- Deadlines and release times are easiest to track in UTC. Convert to local time only for display.\n`─────────────────────────────────────────────────`\n\nANSWER: on-time",
+    "ms": 10398,
+    "tokensIn": 38895,
+    "tokensOut": 442,
+    "costUSD": 0.2137326,
+    "parsed": true,
+    "answer": "on-time",
+    "promptChars": 636
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "on-time",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "plans to publish the fix at 2026-10-31 07:00 KST"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "on-time",
+       "probs": {
+        "late": 0.03,
+        "on-time": 0.95,
+        "abstain": 0.02
+       },
+       "evidence": "plans to publish the fix at 2026-10-31 07:00 KST",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "on-time",
+       "probs": {
+        "late": 0,
+        "on-time": 1,
+        "abstain": 0
+       },
+       "evidence": "plans to publish the fix at 2026-10-31 07:00 KST.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4931,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4094,
+       "tokensIn": 1571,
+       "tokensOut": 305
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4928,
+       "tokensIn": 6159,
+       "tokensOut": 111
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-band",
+   "baseline": {
+    "ok": true,
+    "text": "The rule sets severity from the CVSS v3.1 base score. The title's \"[CRITICAL]\" label does not count. The maintainers calculated a base score of 8.8, which falls in the 7.0–8.9 band, so the advisory should be **high**.\n\nThe title label is the reporter's own wording. It doesn't override the scoring rule, so the title should change to match the score when the advisory is published.\n\n`★ Insight ─────────────────────────────────────`\n- Reporters often over-label severity in report titles. Pinning severity to the CVSS base score keeps advisories consistent and comparable.\n- An 8.8 score is common for path traversal that needs some privilege or user interaction (for example, PR:L or UI:R). It reaches 9.0+ only when the attack needs no authentication and no user interaction, and the impact is high across confidentiality, integrity and availability.\n`─────────────────────────────────────────────────`\n\nANSWER: high",
+    "ms": 9270,
+    "tokensIn": 38890,
+    "tokensOut": 335,
+    "costUSD": 0.2115526,
+    "parsed": true,
+    "answer": "high",
+    "promptChars": 576
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "high",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "The maintainers' calculated CVSS v3.1 base score is 8.8."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "high",
+       "probs": {
+        "high": 0.95,
+        "critical": 0.03,
+        "medium": 0.01,
+        "abstain": 0.01
+       },
+       "evidence": "The maintainers' calculated CVSS v3.1 base score is 8.8.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "high",
+       "probs": {
+        "high": 1,
+        "critical": 0,
+        "medium": 0,
+        "abstain": 0
+       },
+       "evidence": "The maintainers' calculated CVSS v3.1 base score is 8.8.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 7036,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2706,
+       "tokensIn": 1585,
+       "tokensOut": 132
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7034,
+       "tokensIn": 6160,
+       "tokensOut": 64
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-redefine",
+   "baseline": {
+    "ok": true,
+    "text": "The next version should be **4.0.0**.\n\n1. **What changed:** PR #1012 removes the `--legacy-output` CLI flag. No exported functions or types change.\n2. **Repo rule:** In this repo, removing or renaming any CLI flag counts as a breaking change, even if the flag was deprecated. The flag being deprecated since v3.0 doesn't make it an exception.\n3. **SemVer:** A breaking change means a major bump, so 3.8.1 becomes 4.0.0. The minor and patch numbers reset to 0.\n4. **The commit label doesn't decide it:** `chore(cli):` might suggest a patch or no release, and it has no `!` or `BREAKING CHANGE:` footer. But the version follows what the change does, not how the commit was labelled. That missing marker is worth fixing in the changelog or release notes so automated release tools don't pick 3.8.2 by mistake.\n\n`★ Insight ─────────────────────────────────────`\n- Plain SemVer only covers the \"public API.\" This repo's rule says CLI flags are part of that API, so removing one is breaking even though the library code is untouched.\n- Deprecating a flag is the warning; removing it is the break. Deprecation lets users prepare, but it doesn't make the removal any less breaking.\n- Tools like semantic-release read the commit type. A `chore:` commit without `!` would get the wrong version, so the commit should have been `chore(cli)!: …` or `feat(cli)!: …`.\n`─────────────────────────────────────────────────`\n\nANSWER: 4.0.0",
+    "ms": 11653,
+    "tokensIn": 38921,
+    "tokensOut": 579,
+    "costUSD": 0.2166806,
+    "parsed": true,
+    "answer": "4.0.0",
+    "promptChars": 695
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "4.0.0",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "chore(cli): drop deprecated --legacy-output flag"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "4.0.0",
+       "probs": {
+        "3.8.2": 0.02,
+        "3.9.0": 0.01,
+        "4.0.0": 0.96,
+        "abstain": 0.01
+       },
+       "evidence": "chore(cli): drop deprecated --legacy-output flag",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "4.0.0",
+       "probs": {
+        "3.8.2": 0,
+        "3.9.0": 0,
+        "4.0.0": 1,
+        "abstain": 0
+       },
+       "evidence": "The only change since then is PR #1012, commit `chore(cli): drop deprecated --legacy-output flag`.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5593,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2880,
+       "tokensIn": 1639,
+       "tokensOut": 140
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5590,
+       "tokensIn": 6199,
+       "tokensOut": 86
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-dup",
+   "baseline": {
+    "ok": true,
+    "text": "Yes, #4120 should be marked as a duplicate of #3987.\n\nThe rule says to mark an issue as a duplicate when its root cause matches an open issue, meaning the same failing stack frame and the same trigger. Both parts match here:\n\n- **Same failing stack frame:** Both issues fail at `resolvePath (src/config/path.ts:41)`. #4120 includes the full error, `TypeError: Cannot read properties of undefined (reading 'split')`, and #3987 is reported with the same frame.\n- **Same trigger:** Both happen on Windows when the config path has a space in it. #4120 says \"config path contains a space\" and #3987 says \"folder name has a space\"; those describe the same input.\n- **The wording difference doesn't count:** #4120 says \"crash\" and #3987 says \"config file not found.\" That is a difference in how users saw the symptom, which the rule says to ignore. A crash during path resolution could easily show up as \"file not found\" to the user.\n\n#3987 is still open, which the rule requires.\n\nANSWER: YES",
+    "ms": 10684,
+    "tokensIn": 38954,
+    "tokensOut": 372,
+    "costUSD": 0.2128046,
+    "parsed": true,
+    "answer": true,
+    "promptChars": 823
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": true,
+      "conf": 0.95,
+      "agree": true,
+      "escalate": false,
+      "why": "reported on Windows with the same stack frame at resolvePath (src/config/path.ts:41)"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "p_yes": 0.9,
+       "abstain": false,
+       "evidence": "reported on Windows with the same stack frame at resolvePath (src/config/path.ts:41)",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "p_yes": 1,
+       "abstain": false,
+       "evidence": "reported on Windows with the same stack frame at resolvePath (src/config/path.ts:41)",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 4269,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3489,
+       "tokensIn": 1536,
+       "tokensOut": 195
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4265,
+       "tokensIn": 6143,
+       "tokensOut": 51
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-retry",
+   "baseline": {
+    "ok": true,
+    "text": "Task T-311 is accepted.\n\n1. **Attempts allowed:** The task can be retried at most 2 times. That makes three attempts in total: the original (attempt 1) and two retries (attempts 2 and 3).\n2. **Attempt 1:** It failed because of rate limiting, which used up the first retry.\n3. **Attempt 2:** It timed out at 15:00, the limit. This counts as a failure and used up the second and last retry.\n4. **Attempt 3:** This is the last allowed attempt. It finished in 9:40, under the 15-minute limit, and succeeded.\n5. **Decision:** The rule says a success on any allowed attempt is accepted. Attempt 3 was allowed and succeeded, so its result is accepted. Reassigning to a human only happens when every allowed attempt fails, and there are no retries left anyway.\n\n`★ Insight ─────────────────────────────────────`\n- \"Retried at most 2 times\" means 1 original plus 2 retries, so 3 attempts. Reading it as 2 attempts in total would wrongly lead to reassigning the task.\n- A timeout counts as a failure here, so attempt 2 used up a retry just like the rate limit did.\n- 9:40 is under the 15-minute limit, so attempt 3 can't be treated as a timeout.\n`─────────────────────────────────────────────────`\n\nANSWER: accept",
+    "ms": 10956,
+    "tokensIn": 38511,
+    "tokensOut": 519,
+    "costUSD": 0.2122006,
+    "parsed": true,
+    "answer": "accept",
+    "promptChars": 684
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "accept",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "Attempt 3: succeeded in 9:40."
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "accept",
+       "probs": {
+        "reassign": 0.02,
+        "retry": 0.01,
+        "accept": 0.96,
+        "abstain": 0.01
+       },
+       "evidence": "Attempt 3: succeeded in 9:40.",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "accept",
+       "probs": {
+        "reassign": 0,
+        "retry": 0,
+        "accept": 1,
+        "abstain": 0
+       },
+       "evidence": "Attempt 3: succeeded in 9:40.",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 5923,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3833,
+       "tokensIn": 1618,
+       "tokensOut": 172
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5919,
+       "tokensIn": 6171,
+       "tokensOut": 57
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "h-p95",
+   "baseline": {
+    "ok": true,
+    "text": "**Cumulative counts:** 200 requests, so the 95th percentile is request #190 (0.95 × 200).\n\n| Bucket | Count | Cumulative | Cumulative % |\n|---|---|---|---|\n| <100 ms | 120 | 120 | 60% |\n| 100–199 ms | 50 | 170 | 85% |\n| 200–299 ms | 18 | 188 | 94% |\n| 300–399 ms | 8 | 196 | 98% |\n| ≥400 ms | 4 | 200 | 100% |\n\nThe 200–299 ms bucket only gets to 94%, which is 188 of the 190 requests needed. The first bucket that reaches 95% is **300–399 ms**, so that is the p95 bucket.\n\nEvery request in that bucket takes at least 300 ms, so p95 meets the \"at or above 300 ms\" threshold. The release should be blocked.\n\n`★ Insight ─────────────────────────────────────`\n- The result depends on just 2 requests. If 2 of the 300+ ms requests had been a bit faster and landed in the 200–299 ms bucket, that bucket would reach 190 and the release would ship.\n- Because the latencies are grouped into buckets, p95 can only be stated as a range (300–399 ms here). That's enough for this decision because the whole bucket is above the threshold. If the threshold were 350 ms, it would fall inside this bucket and the buckets alone couldn't settle it.\n`─────────────────────────────────────────────────`\n\nANSWER: block",
+    "ms": 11230,
+    "tokensIn": 38914,
+    "tokensOut": 574,
+    "costUSD": 0.21652459999999998,
+    "parsed": true,
+    "answer": "block",
+    "promptChars": 641
+   },
+   "cev": {
+    "answers": {
+     "a": {
+      "answer": "block",
+      "conf": 0.98,
+      "agree": true,
+      "escalate": false,
+      "why": "200-299 ms: 18 | 300-399 ms: 8"
+     }
+    },
+    "votes": {
+     "claude": {
+      "a": {
+       "choice": "block",
+       "probs": {
+        "block": 0.96,
+        "ship": 0.03,
+        "abstain": 0.01
+       },
+       "evidence": "200-299 ms: 18 | 300-399 ms: 8",
+       "missing": ""
+      }
+     },
+     "codex": {
+      "a": {
+       "choice": "block",
+       "probs": {
+        "block": 1,
+        "ship": 0,
+        "abstain": 0
+       },
+       "evidence": "<100 ms: 120 | 100-199 ms: 50 | 200-299 ms: 18 | 300-399 ms: 8",
+       "missing": ""
+      }
+     }
+    },
+    "meta": {
+     "ms": 7411,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3315,
+       "tokensIn": 1587,
+       "tokensOut": 184
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7408,
+       "tokensIn": 6159,
+       "tokensOut": 113
+      }
+     }
+    }
+   }
+  }
+ ],
+ "stability": [],
+ "batch": null,
+ "calib": {
+  "tokensIn": 38657,
+  "ms": 10597
+ }
+}

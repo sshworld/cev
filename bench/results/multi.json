@@ -1,0 +1,146 @@
+{
+ "at": "2026-10-30T00:49:53.034Z",
+ "summary": {
+  "sessions": 6,
+  "decisions": 12,
+  "totalMs": 9118,
+  "wallMedianMs": 5172,
+  "wallMaxMs": 9075,
+  "decideMedianMs": 2248,
+  "right": 12,
+  "memory": {
+   "before": {
+    "procs": 4,
+    "mb": 409
+   },
+   "after": {
+    "procs": 4,
+    "mb": 486
+   }
+  },
+  "health": {
+   "ok": true,
+   "version": "0.3.0",
+   "pid": 16423,
+   "awake": true,
+   "codexTier": "priority",
+   "inflight": 0,
+   "queued": 0,
+   "sessions": 6,
+   "served": 12,
+   "failed": 0,
+   "fallbacks": 0,
+   "startedAt": "2026-10-30T00:49:39.666Z"
+  }
+ },
+ "rows": [
+  {
+   "session": "session-1",
+   "id": "pr-1",
+   "wallMs": 2071,
+   "decideMs": 2061,
+   "answer": "merge",
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-1",
+   "id": "ci-2",
+   "wallMs": 3829,
+   "decideMs": 3796,
+   "answer": true,
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-2",
+   "id": "rel-3",
+   "wallMs": 1907,
+   "decideMs": 1881,
+   "answer": false,
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-2",
+   "id": "agent-1",
+   "wallMs": 2284,
+   "decideMs": 2248,
+   "answer": true,
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-3",
+   "id": "score-2",
+   "wallMs": 3998,
+   "decideMs": 2113,
+   "answer": 2,
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-3",
+   "id": "h-correct",
+   "wallMs": 3351,
+   "decideMs": 1281,
+   "answer": "needs-upgrade",
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-4",
+   "id": "h-rubric-gap",
+   "wallMs": 6453,
+   "decideMs": 4171,
+   "answer": "abstain",
+   "escalate": true,
+   "right": true
+  },
+  {
+   "session": "session-4",
+   "id": "h-contradict",
+   "wallMs": 5172,
+   "decideMs": 1801,
+   "answer": false,
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-5",
+   "id": "h-redefine",
+   "wallMs": 6252,
+   "decideMs": 2425,
+   "answer": "4.0.0",
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-5",
+   "id": "issue-1",
+   "wallMs": 6488,
+   "decideMs": 2491,
+   "answer": "enhancement",
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-6",
+   "id": "dep-2",
+   "wallMs": 7126,
+   "decideMs": 1972,
+   "answer": "manual-review",
+   "escalate": false,
+   "right": true
+  },
+  {
+   "session": "session-6",
+   "id": "sec-3",
+   "wallMs": 9075,
+   "decideMs": 2824,
+   "answer": "abstain",
+   "escalate": true,
+   "right": true
+  }
+ ]
+}

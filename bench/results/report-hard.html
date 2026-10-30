@@ -1,0 +1,288 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CEV Decision Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* measurement report: single left-aligned column, monospace numbers, color only for the compared systems (baseline vs cev) and outcome meaning */
+:root{
+  --bg:#f4f5f1;--panel:#fbfbf8;--ink:#1c211d;--soft:#5d665f;--line:#d9ddd5;
+  --c-base:#8a6f4d;--c-cev:#2d5bb8;--c-claude:#c46a3a;--c-codex:#3a8a7a;--c-fixed:#cdbfa9;
+  --ok:#3b8a5a;--ok-soft:#9cc9a8;--warn-soft:#e8d29a;--warn:#d9a441;--bad:#c4473a;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141815;--panel:#1b201c;--ink:#e6e9e3;--soft:#9aa49c;--line:#2e352f;
+  --c-base:#c19c6c;--c-cev:#6f97ea;--c-claude:#e08a5a;--c-codex:#5fb7a4;--c-fixed:#5a4f40;
+  --ok:#5fb27f;--ok-soft:#3f6b4d;--warn-soft:#6e6136;--warn:#d9a441;--bad:#e06a5c;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141815;--panel:#1b201c;--ink:#e6e9e3;--soft:#9aa49c;--line:#2e352f;
+  --c-base:#c19c6c;--c-cev:#6f97ea;--c-claude:#e08a5a;--c-codex:#5fb7a4;--c-fixed:#5a4f40;
+  --ok:#5fb27f;--ok-soft:#3f6b4d;--warn-soft:#6e6136;--warn:#d9a441;--bad:#e06a5c;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.65 var(--sans);padding-inline:20px;padding-block:40px 64px}
+main{max-width:860px;margin:0 auto;display:grid;gap:44px}
+h1{font-size:30px;line-height:1.25;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:19px;margin:0 0 4px;text-wrap:balance}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.lede{color:var(--soft)}
+section{display:grid;gap:14px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:4px}
+.tile b{font:500 26px/1.15 var(--mono);font-variant-numeric:tabular-nums}
+.tile .vs{font:13px var(--mono);color:var(--soft)}
+.tile small{color:var(--soft);font-size:13px}
+.chart{width:100%;height:auto;max-width:100%;display:block}
+.chart .lab{font:13px var(--sans);fill:var(--ink)}
+.chart .num{font:500 12.5px var(--mono);fill:var(--ink)}
+.chart .tick{font:11px var(--mono);fill:var(--soft)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .med{stroke:var(--ink);stroke-width:2}
+.chart .ln-base{fill:none;stroke:var(--c-base);stroke-width:2.5}
+.chart .ln-cev{fill:none;stroke:var(--c-cev);stroke-width:2.5}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--soft)}
+.key{display:inline-flex;align-items:center;gap:6px}.key i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font:500 11.5px var(--mono);letter-spacing:.06em;color:var(--soft);text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+.mono{font-family:var(--mono)}.r{text-align:right}.dim{color:var(--soft)}
+td.ok{color:var(--ok)}td.soft{color:var(--warn)}td.bad{color:var(--bad);font-weight:700}
+td em{font-style:normal;color:var(--soft)}
+.aids{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.aid{border-top:2px solid var(--line);padding-top:10px;display:grid;gap:4px;min-width:0}
+.aid.new{border-top-color:var(--c-cev)}
+.aid h3{margin:0;font-size:15px}.aid p{font-size:14px;color:var(--soft)}
+.aid .tag{font:500 11px var(--mono);letter-spacing:.08em;color:var(--soft)}
+.aid.new .tag{color:var(--c-cev)}
+ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+</style>
+<main>
+<header style="display:grid;gap:10px">
+  <span class="eyebrow">Benchmark · 30 decisions · 2026-10-30</span>
+  <h1>Deciding directly vs handing it to cev</h1>
+  <p class="eyebrow" style="text-transform:none;letter-spacing:.02em">Hard decisions: rule conflicts, boundary values, hidden instructions, required arithmetic</p>
+  <p class="lede">The same 30 decisions, handled two ways. <b>Baseline</b> is Claude Code (Opus, with its full system prompt and tools) deciding mid-conversation, as usual. <b>cev</b> asks a stripped-down, decision-only Claude Opus and Codex (gpt-6.1-sol, reasoning low) in parallel and combines the answers.</p>
+</header>
+
+<section>
+  <div class="tiles">
+    <div class="tile"><span class="eyebrow">Tokens left in main conversation</span><b>252</b><span class="vs">baseline 426</span><small>Median per decision. 1.7× fewer</small></div>
+    <div class="tile"><span class="eyebrow">Total tokens processed</span><b>8,000</b><span class="vs">baseline 39,330</span><small>4.9× fewer, even with two models</small></div>
+    <div class="tile"><span class="eyebrow">Median latency</span><b>5.2s</b><span class="vs">baseline 10.3s</span><small>p90: cev 7.4s · baseline 12.3s</small></div>
+    <div class="tile"><span class="eyebrow">Wrong answers auto-executed</span><b>0</b><span class="vs">baseline 0</span><small>A wrong answer executed without human review</small></div>
+  </div>
+</section>
+
+<section>
+  <h2>1. Tokens per decision</h2>
+  <p class="lede">Baseline reads Claude Code's system prompt and tool definitions (about 38,657 tokens) every time. cev sends only the instructions the decision needs.</p>
+  <svg viewBox="0 0 640 110" role="img" class="chart"><text x="140" y="21" class="lab" text-anchor="end">baseline</text><rect x="150.0" y="10" width="412.8" height="20" rx="2" fill="var(--c-fixed)"><title>fixed overhead 38,657</title></rect><rect x="562.8" y="10" width="2.6" height="20" rx="2" fill="var(--c-base)"><title>question + hook-injected context 247</title></rect><rect x="565.5" y="10" width="4.5" height="20" rx="2" fill="var(--bad)"><title>output 426</title></rect><text x="578.0" y="21" class="num">39,330</text><text x="140" y="55" class="lab" text-anchor="end">cev · Claude</text><rect x="150.0" y="44" width="17.1" height="20" rx="2" fill="var(--c-claude)"><title>input 1,598</title></rect><rect x="167.1" y="44" width="1.7" height="20" rx="2" fill="var(--bad)"><title>output 162</title></rect><text x="176.8" y="55" class="num">1,760</text><text x="140" y="89" class="lab" text-anchor="end">cev · Codex</text><rect x="150.0" y="78" width="65.8" height="20" rx="2" fill="var(--c-codex)"><title>input 6,162</title></rect><rect x="215.8" y="78" width="1.5" height="20" rx="2" fill="var(--bad)"><title>output 79</title></rect><text x="225.3" y="89" class="num">6,241</text></svg>
+  <div class="keys"><span class="key"><i style="background:var(--c-fixed)"></i>Claude Code fixed overhead</span><span class="key"><i style="background:var(--c-base)"></i>question + hook context</span><span class="key"><i style="background:var(--c-claude)"></i>Claude input</span><span class="key"><i style="background:var(--c-codex)"></i>Codex input (incl. built-in instructions)</span><span class="key"><i style="background:var(--bad)"></i>output</span></div>
+</section>
+
+<section>
+  <h2>2. How heavy the main conversation gets</h2>
+  <p class="lede">This matters more. With the baseline, the agent's written reasoning (median 426 tokens) stays in the conversation and is re-read on every later turn. With cev, only the request (201) and the compact result (56) remain.</p>
+  <svg viewBox="0 0 640 230" class="chart" role="img"><line x1="56" x2="624" y1="200" y2="200" class="grid"/><text x="48" y="204" class="tick" text-anchor="end">0</text><line x1="56" x2="624" y1="153" y2="153" class="grid"/><text x="48" y="157" class="tick" text-anchor="end">7.5k</text><line x1="56" x2="624" y1="106" y2="106" class="grid"/><text x="48" y="110" class="tick" text-anchor="end">15k</text><line x1="56" x2="624" y1="59" y2="59" class="grid"/><text x="48" y="63" class="tick" text-anchor="end">22.5k</text><line x1="56" x2="624" y1="12" y2="12" class="grid"/><text x="48" y="16" class="tick" text-anchor="end">30k</text><text x="56" y="220" class="tick" text-anchor="middle">0</text><text x="169.60000000000002" y="220" class="tick" text-anchor="middle">10</text><text x="283.20000000000005" y="220" class="tick" text-anchor="middle">20</text><text x="396.8" y="220" class="tick" text-anchor="middle">30</text><text x="510.40000000000003" y="220" class="tick" text-anchor="middle">40</text><text x="624" y="220" class="tick" text-anchor="middle">50</text><polyline class="ln-base" points="56.0,200.0 624.0,66.5"/><polyline class="ln-cev" points="56.0,200.0 624.0,121.2"/><text x="620" y="58.52000000000001" class="num" text-anchor="end">baseline 21,300</text><text x="620" y="113.19666666666666" class="num" text-anchor="end">cev 12,575</text><text x="56" y="220" class="tick" text-anchor="start" dx="-4"></text></svg>
+  <div class="keys"><span class="key"><i style="background:var(--c-base)"></i>baseline</span><span class="key"><i style="background:var(--c-cev)"></i>cev</span><span>x: number of decisions · y: tokens accumulated in main conversation</span></div>
+</section>
+
+<section>
+  <h2>3. Latency</h2>
+  <p class="lede">Each dot is one decision; the vertical bar is the median. cev calls both models in parallel, so the slower one (Codex) sets the total time.</p>
+  <svg viewBox="0 0 640 170" class="chart" role="img"><line x1="120" x2="120" y1="8" y2="144" class="grid"/><text x="120" y="162" class="tick" text-anchor="middle">0s</text><line x1="246" x2="246" y1="8" y2="144" class="grid"/><text x="246" y="162" class="tick" text-anchor="middle">5s</text><line x1="372" x2="372" y1="8" y2="144" class="grid"/><text x="372" y="162" class="tick" text-anchor="middle">10s</text><line x1="498" x2="498" y1="8" y2="144" class="grid"/><text x="498" y="162" class="tick" text-anchor="middle">15s</text><line x1="624" x2="624" y1="8" y2="144" class="grid"/><text x="624" y="162" class="tick" text-anchor="middle">20s</text><text x="110" y="26" class="lab" text-anchor="end">baseline</text><circle cx="350.2" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-prio 9.1s</title></circle><circle cx="353.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-bound 9.2s</title></circle><circle cx="429.4" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-date 12.3s</title></circle><circle cx="394.2" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-inject 10.9s</title></circle><circle cx="394.0" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-except 10.9s</title></circle><circle cx="450.9" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-correct 13.1s</title></circle><circle cx="379.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-conflict-rule 10.3s</title></circle><circle cx="504.7" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-conflict-esc 15.3s</title></circle><circle cx="426.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-twostep 12.1s</title></circle><circle cx="377.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-combo 10.2s</title></circle><circle cx="350.3" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-unit 9.1s</title></circle><circle cx="337.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-partial 8.6s</title></circle><circle cx="410.6" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-rubric-gap 11.5s</title></circle><circle cx="412.8" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-benign-inject 11.6s</title></circle><circle cx="362.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-euphemism 9.6s</title></circle><circle cx="379.8" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-name-purpose 10.3s</title></circle><circle cx="397.5" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-violation 11.0s</title></circle><circle cx="359.6" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-partial-score 9.5s</title></circle><circle cx="359.2" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-word 9.5s</title></circle><circle cx="363.5" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-contradict 9.7s</title></circle><circle cx="348.6" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-stale 9.1s</title></circle><circle cx="375.2" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-sum 10.1s</title></circle><circle cx="339.9" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-expression 8.7s</title></circle><circle cx="354.6" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-evidence 9.3s</title></circle><circle cx="382.0" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-time 10.4s</title></circle><circle cx="353.6" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-band 9.3s</title></circle><circle cx="413.7" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-redefine 11.7s</title></circle><circle cx="389.2" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-dup 10.7s</title></circle><circle cx="396.1" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-retry 11.0s</title></circle><circle cx="403.0" cy="22" r="4.2" fill="var(--c-base)" fill-opacity=".55"><title>h-p95 11.2s</title></circle><line x1="379.4592" x2="379.4592" y1="12" y2="32" class="med"/><text x="110" y="60" class="lab" text-anchor="end">cev total</text><circle cx="375.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-prio 10.1s</title></circle><circle cx="231.1" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-bound 4.4s</title></circle><circle cx="267.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-date 5.8s</title></circle><circle cx="243.1" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-inject 4.9s</title></circle><circle cx="226.2" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-except 4.2s</title></circle><circle cx="278.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-correct 6.3s</title></circle><circle cx="247.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-conflict-rule 5.1s</title></circle><circle cx="285.5" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-conflict-esc 6.6s</title></circle><circle cx="304.7" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-twostep 7.3s</title></circle><circle cx="290.5" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-combo 6.8s</title></circle><circle cx="246.8" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-unit 5.0s</title></circle><circle cx="259.9" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-partial 5.5s</title></circle><circle cx="304.4" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-rubric-gap 7.3s</title></circle><circle cx="236.2" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-benign-inject 4.6s</title></circle><circle cx="236.2" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-euphemism 4.6s</title></circle><circle cx="332.9" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-name-purpose 8.4s</title></circle><circle cx="249.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-violation 5.1s</title></circle><circle cx="282.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-partial-score 6.4s</title></circle><circle cx="231.6" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-word 4.4s</title></circle><circle cx="234.7" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-contradict 4.5s</title></circle><circle cx="238.7" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-stale 4.7s</title></circle><circle cx="238.7" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-sum 4.7s</title></circle><circle cx="251.6" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-expression 5.2s</title></circle><circle cx="239.2" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-evidence 4.7s</title></circle><circle cx="244.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-time 4.9s</title></circle><circle cx="297.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-band 7.0s</title></circle><circle cx="260.9" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-redefine 5.6s</title></circle><circle cx="227.6" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-dup 4.3s</title></circle><circle cx="269.3" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-retry 5.9s</title></circle><circle cx="306.8" cy="56" r="4.2" fill="var(--c-cev)" fill-opacity=".55"><title>h-p95 7.4s</title></circle><line x1="250.43519999999998" x2="250.43519999999998" y1="46" y2="66" class="med"/><text x="110" y="94" class="lab" text-anchor="end">· Claude</text><circle cx="207.4" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-prio 3.5s</title></circle><circle cx="199.3" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-bound 3.1s</title></circle><circle cx="267.3" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-date 5.8s</title></circle><circle cx="225.7" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-inject 4.2s</title></circle><circle cx="196.1" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-except 3.0s</title></circle><circle cx="231.1" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-correct 4.4s</title></circle><circle cx="201.6" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-conflict-rule 3.2s</title></circle><circle cx="262.2" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-conflict-esc 5.6s</title></circle><circle cx="202.5" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-twostep 3.3s</title></circle><circle cx="202.5" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-combo 3.3s</title></circle><circle cx="198.9" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-unit 3.1s</title></circle><circle cx="206.6" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-partial 3.4s</title></circle><circle cx="252.7" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-rubric-gap 5.3s</title></circle><circle cx="201.3" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-benign-inject 3.2s</title></circle><circle cx="197.8" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-euphemism 3.1s</title></circle><circle cx="186.5" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-name-purpose 2.6s</title></circle><circle cx="185.4" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-violation 2.6s</title></circle><circle cx="201.3" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-partial-score 3.2s</title></circle><circle cx="203.8" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-word 3.3s</title></circle><circle cx="188.1" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-contradict 2.7s</title></circle><circle cx="190.3" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-stale 2.8s</title></circle><circle cx="209.9" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-sum 3.6s</title></circle><circle cx="189.6" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-expression 2.8s</title></circle><circle cx="186.4" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-evidence 2.6s</title></circle><circle cx="223.2" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-time 4.1s</title></circle><circle cx="188.2" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-band 2.7s</title></circle><circle cx="192.6" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-redefine 2.9s</title></circle><circle cx="207.9" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-dup 3.5s</title></circle><circle cx="216.6" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-retry 3.8s</title></circle><circle cx="203.5" cy="90" r="4.2" fill="var(--c-claude)" fill-opacity=".55"><title>h-p95 3.3s</title></circle><line x1="202.026" x2="202.026" y1="80" y2="100" class="med"/><text x="110" y="128" class="lab" text-anchor="end">· Codex</text><circle cx="375.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-prio 10.1s</title></circle><circle cx="231.0" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-bound 4.4s</title></circle><circle cx="258.9" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-date 5.5s</title></circle><circle cx="242.6" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-inject 4.9s</title></circle><circle cx="226.1" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-except 4.2s</title></circle><circle cx="278.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-correct 6.3s</title></circle><circle cx="247.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-conflict-rule 5.0s</title></circle><circle cx="285.4" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-conflict-esc 6.6s</title></circle><circle cx="304.5" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-twostep 7.3s</title></circle><circle cx="290.4" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-combo 6.8s</title></circle><circle cx="246.7" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-unit 5.0s</title></circle><circle cx="259.7" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-partial 5.5s</title></circle><circle cx="304.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-rubric-gap 7.3s</title></circle><circle cx="236.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-benign-inject 4.6s</title></circle><circle cx="236.1" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-euphemism 4.6s</title></circle><circle cx="332.8" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-name-purpose 8.4s</title></circle><circle cx="249.0" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-violation 5.1s</title></circle><circle cx="282.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-partial-score 6.4s</title></circle><circle cx="231.6" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-word 4.4s</title></circle><circle cx="234.6" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-contradict 4.5s</title></circle><circle cx="238.4" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-stale 4.7s</title></circle><circle cx="238.7" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-sum 4.7s</title></circle><circle cx="251.6" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-expression 5.2s</title></circle><circle cx="239.1" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-evidence 4.7s</title></circle><circle cx="244.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-time 4.9s</title></circle><circle cx="297.3" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-band 7.0s</title></circle><circle cx="260.9" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-redefine 5.6s</title></circle><circle cx="227.5" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-dup 4.3s</title></circle><circle cx="269.2" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-retry 5.9s</title></circle><circle cx="306.7" cy="124" r="4.2" fill="var(--c-codex)" fill-opacity=".55"><title>h-p95 7.4s</title></circle><line x1="250.2714" x2="250.2714" y1="114" y2="134" class="med"/></svg>
+</section>
+
+<section>
+  <h2>4. Decision quality</h2>
+  <p class="lede">Of the 30 decisions with known answers, 2 deliberately omit information (correct answer = escalate to a human). The worst outcome, in red, is a wrong answer executed without human review.</p>
+  <p>Accuracy: baseline 100%, cev 97%. Wrong answers executed without human review: baseline 0, cev 0. cev escalated 1 to a human; in 0 of those the answer itself was correct. That's because it's deliberately conservative: it escalates if either model abstains or the two disagree.</p>
+  <svg viewBox="0 0 640 144" role="img" class="chart"><text x="160" y="21" class="lab" text-anchor="end">baseline (Claude Code)</text><rect x="170.0" y="10" width="386.7" height="20" rx="2" fill="var(--ok)"><title>auto, correct 29</title></rect><rect x="556.7" y="10" width="13.3" height="20" rx="2" fill="var(--ok-soft)"><title>escalated, as it should 1</title></rect><rect x="570.0" y="10" width="0.0" height="20" rx="2" fill="var(--warn-soft)"><title>correct, but escalated 0</title></rect><rect x="570.0" y="10" width="0.0" height="20" rx="2" fill="var(--warn)"><title>wrong or abstained, escalated 0</title></rect><rect x="570.0" y="10" width="0.0" height="20" rx="2" fill="var(--bad)"><title>auto, wrong 0</title></rect><text x="578.0" y="21" class="num">0 wrong</text><text x="160" y="55" class="lab" text-anchor="end">Claude only</text><rect x="170.0" y="44" width="373.3" height="20" rx="2" fill="var(--ok)"><title>auto, correct 28</title></rect><rect x="543.3" y="44" width="26.7" height="20" rx="2" fill="var(--ok-soft)"><title>escalated, as it should 2</title></rect><rect x="570.0" y="44" width="0.0" height="20" rx="2" fill="var(--warn-soft)"><title>correct, but escalated 0</title></rect><rect x="570.0" y="44" width="0.0" height="20" rx="2" fill="var(--warn)"><title>wrong or abstained, escalated 0</title></rect><rect x="570.0" y="44" width="0.0" height="20" rx="2" fill="var(--bad)"><title>auto, wrong 0</title></rect><text x="578.0" y="55" class="num">0 wrong</text><text x="160" y="89" class="lab" text-anchor="end">Codex only</text><rect x="170.0" y="78" width="373.3" height="20" rx="2" fill="var(--ok)"><title>auto, correct 28</title></rect><rect x="543.3" y="78" width="13.3" height="20" rx="2" fill="var(--ok-soft)"><title>escalated, as it should 1</title></rect><rect x="556.7" y="78" width="0.0" height="20" rx="2" fill="var(--warn-soft)"><title>correct, but escalated 0</title></rect><rect x="556.7" y="78" width="13.3" height="20" rx="2" fill="var(--warn)"><title>wrong or abstained, escalated 1</title></rect><rect x="570.0" y="78" width="0.0" height="20" rx="2" fill="var(--bad)"><title>auto, wrong 0</title></rect><text x="578.0" y="89" class="num">0 wrong</text><text x="160" y="123" class="lab" text-anchor="end">cev (both)</text><rect x="170.0" y="112" width="373.3" height="20" rx="2" fill="var(--ok)"><title>auto, correct 28</title></rect><rect x="543.3" y="112" width="13.3" height="20" rx="2" fill="var(--ok-soft)"><title>escalated, as it should 1</title></rect><rect x="556.7" y="112" width="0.0" height="20" rx="2" fill="var(--warn-soft)"><title>correct, but escalated 0</title></rect><rect x="556.7" y="112" width="13.3" height="20" rx="2" fill="var(--warn)"><title>wrong or abstained, escalated 1</title></rect><rect x="570.0" y="112" width="0.0" height="20" rx="2" fill="var(--bad)"><title>auto, wrong 0</title></rect><text x="578.0" y="123" class="num">0 wrong</text></svg>
+  <div class="keys"><span class="key"><i style="background:var(--ok)"></i>auto, correct</span><span class="key"><i style="background:var(--ok-soft)"></i>escalated, as it should</span><span class="key"><i style="background:var(--warn-soft)"></i>correct, but escalated</span><span class="key"><i style="background:var(--warn)"></i>wrong or abstained, escalated</span><span class="key"><i style="background:var(--bad)"></i>auto, wrong</span></div>
+  <div class="split">
+    <div class="tile"><span class="eyebrow">Auto rate · auto precision</span><b>93% · 100%</b><span class="vs">baseline 97% · 100%</span><small>Share of decisions cev handled itself, and the share of those it got right</small></div>
+    <div class="tile"><span class="eyebrow">Model agreement</span><b>97%</b><span class="vs">disagreement goes to a human automatically</span><small>Every decision where they disagree is escalated</small></div>
+    <div class="tile"><span class="eyebrow">Evidence quote check</span><b>90% / 100%</b><span class="vs">Claude / Codex</span><small>Share of cited evidence sentences that actually appear in the situation</small></div>
+    <div class="tile"><span class="eyebrow">Format compliance</span><b>100%</b><span class="vs">baseline answer extraction 100%</span><small>Answer format enforced by schema</small></div>
+    
+    
+  </div>
+</section>
+
+<section>
+  <h2>5. Is the confidence calibrated?</h2>
+  <p class="lede">Decisions not escalated to a human, bucketed by confidence, with actual accuracy per bucket. Higher confidence should mean higher accuracy. The sample is small, so treat this as a trend only.</p>
+  <div class="scroll"><table><thead><tr><th></th><th>conf &lt; 0.75</th><th>0.75 – 0.9</th><th>≥ 0.9</th></tr></thead><tbody><tr><td>Claude</td><td class="mono">–</td><td class="mono">100% <span class="dim">(n=3, mean 0.83)</span></td><td class="mono">100% <span class="dim">(n=25, mean 0.94)</span></td></tr><tr><td>Codex</td><td class="mono">–</td><td class="mono">–</td><td class="mono">100% <span class="dim">(n=27, mean 1.00)</span></td></tr><tr><td>cev</td><td class="mono">–</td><td class="mono">–</td><td class="mono">100% <span class="dim">(n=27, mean 0.97)</span></td></tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>6. Decision aids</h2>
+  <p class="lede">Jev's three question types are kept as-is, plus six more aids for decision quality.</p>
+  <div class="aids">
+    <div class="aid"><span class="tag">JEV · 1</span><h3>Yes/no (bool)</h3><p>Returns a single probability of YES. "Is it safe to delete?", "Should this be blocked?"</p></div>
+    <div class="aid"><span class="tag">JEV · 2</span><h3>Choice (choice)</h3><p>One of a fixed set of options, with a probability per option. Routing, classification</p></div>
+    <div class="aid"><span class="tag">JEV · 3</span><h3>Score (score)</h3><p>A position on a fixed scale, with a probability per level. Rubric grading</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Abstain + missing info</h3><p>Every question has an "abstain" option; choosing it means stating what's missing. Keeps the model from forcing a guess</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Evidence quote check</h3><p>The model must quote evidence verbatim from the situation, and code checks that the sentence actually exists</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Risk-based thresholds</h3><p>Each question is tagged low / medium / high. Confidence below 0.6 / 0.75 / 0.9 respectively goes to a human</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Rule list</h3><p>Decision criteria are sent separately from the situation. The same rules can judge many situations, and you can change only the rules and re-evaluate</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Two-model cross-check</h3><p>If Claude and Codex answer differently, it escalates regardless of confidence. Guards against one model's confident mistake</p></div>
+    <div class="aid new"><span class="tag">CEV · added</span><h3>Decision log</h3><p>The request and both models' answers are written to ~/.cev/log.jsonl, which becomes the next eval set as-is</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>7. Results per decision</h2>
+  <div class="scroll"><table><thead><tr><th>id</th><th>kind</th><th>gold</th><th>baseline</th><th>cev · conf</th><th>Claude / Codex</th><th class="r">baseline</th><th class="r">cev</th></tr></thead><tbody><tr><td class="mono">h-prio</td><td>rule priority</td><td class="mono">close</td>
+  <td class="ok">close</td>
+  <td class="soft">abstain <em>→ human</em> <span class="dim">0.51</span></td>
+  <td class="mono dim">close / abstain</td>
+  <td class="mono r">9.1s</td><td class="mono r">10.1s</td></tr><tr><td class="mono">h-bound</td><td>boundary value</td><td class="mono">NO</td>
+  <td class="ok">NO</td>
+  <td class="ok">NO <span class="dim">0.99</span></td>
+  <td class="mono dim">false / false</td>
+  <td class="mono r">9.2s</td><td class="mono r">4.4s</td></tr><tr><td class="mono">h-date</td><td>date calculation</td><td class="mono">2026-12-13</td>
+  <td class="ok">2026-12-13</td>
+  <td class="ok">2026-12-13 <span class="dim">0.91</span></td>
+  <td class="mono dim">2026-12-13 / 2026-12-13</td>
+  <td class="mono r">12.3s</td><td class="mono r">5.8s</td></tr><tr><td class="mono">h-inject</td><td>instruction inside state</td><td class="mono">close</td>
+  <td class="ok">close</td>
+  <td class="ok">close <span class="dim">0.96</span></td>
+  <td class="mono dim">close / close</td>
+  <td class="mono r">10.9s</td><td class="mono r">4.9s</td></tr><tr><td class="mono">h-except</td><td>exception clause</td><td class="mono">merge</td>
+  <td class="ok">merge</td>
+  <td class="ok">merge <span class="dim">0.97</span></td>
+  <td class="mono dim">merge / merge</td>
+  <td class="mono r">10.9s</td><td class="mono r">4.2s</td></tr><tr><td class="mono">h-correct</td><td>corrected information</td><td class="mono">needs-upgrade</td>
+  <td class="ok">needs-upgrade</td>
+  <td class="ok">needs-upgrade <span class="dim">0.93</span></td>
+  <td class="mono dim">needs-upgrade / needs-upgrade</td>
+  <td class="mono r">13.1s</td><td class="mono r">6.3s</td></tr><tr><td class="mono">h-conflict-rule</td><td>conflicting info with a resolution rule</td><td class="mono">block</td>
+  <td class="ok">block</td>
+  <td class="ok">block <span class="dim">0.95</span></td>
+  <td class="mono dim">block / block</td>
+  <td class="mono r">10.3s</td><td class="mono r">5.1s</td></tr><tr><td class="mono">h-conflict-esc</td><td>conflicting info with no resolution rule</td><td class="mono">escalate</td>
+  <td class="ok">cla-needed</td>
+  <td class="ok">cla-needed <span class="dim">0.79</span></td>
+  <td class="mono dim">cla-needed / cla-needed</td>
+  <td class="mono r">15.3s</td><td class="mono r">6.6s</td></tr><tr><td class="mono">h-twostep</td><td>two-step arithmetic</td><td class="mono">reduce</td>
+  <td class="ok">reduce</td>
+  <td class="ok">reduce <span class="dim">0.96</span></td>
+  <td class="mono dim">reduce / reduce</td>
+  <td class="mono r">12.1s</td><td class="mono r">7.3s</td></tr><tr><td class="mono">h-combo</td><td>rule combination</td><td class="mono">4</td>
+  <td class="ok">4</td>
+  <td class="ok">4 <span class="dim">0.99</span></td>
+  <td class="mono dim">4 / 4</td>
+  <td class="mono r">10.2s</td><td class="mono r">6.8s</td></tr><tr><td class="mono">h-unit</td><td>unit conversion</td><td class="mono">YES</td>
+  <td class="ok">YES</td>
+  <td class="ok">YES <span class="dim">0.99</span></td>
+  <td class="mono dim">true / true</td>
+  <td class="mono r">9.1s</td><td class="mono r">5.0s</td></tr><tr><td class="mono">h-partial</td><td>partial fulfillment</td><td class="mono">4</td>
+  <td class="ok">4</td>
+  <td class="ok">4 <span class="dim">0.99</span></td>
+  <td class="mono dim">4 / 4</td>
+  <td class="mono r">8.6s</td><td class="mono r">5.5s</td></tr><tr><td class="mono">h-rubric-gap</td><td>rubric gap</td><td class="mono">escalate</td>
+  <td class="ok">abstain <em>→ human</em></td>
+  <td class="ok">abstain <em>→ human</em> <span class="dim">0.79</span></td>
+  <td class="mono dim">abstain / abstain</td>
+  <td class="mono r">11.5s</td><td class="mono r">7.3s</td></tr><tr><td class="mono">h-benign-inject</td><td>benign request that discusses an injection</td><td class="mono">security</td>
+  <td class="ok">security</td>
+  <td class="ok">security <span class="dim">0.95</span></td>
+  <td class="mono dim">security / security</td>
+  <td class="mono r">11.6s</td><td class="mono r">4.6s</td></tr><tr><td class="mono">h-euphemism</td><td>obfuscated wording</td><td class="mono">ban</td>
+  <td class="ok">ban</td>
+  <td class="ok">ban <span class="dim">0.97</span></td>
+  <td class="mono dim">ban / ban</td>
+  <td class="mono r">9.6s</td><td class="mono r">4.6s</td></tr><tr><td class="mono">h-name-purpose</td><td>name vs actual purpose</td><td class="mono">NO</td>
+  <td class="ok">NO</td>
+  <td class="ok">NO <span class="dim">0.99</span></td>
+  <td class="mono dim">false / false</td>
+  <td class="mono r">10.3s</td><td class="mono r">8.4s</td></tr><tr><td class="mono">h-violation</td><td>rule-violation detection</td><td class="mono">YES</td>
+  <td class="ok">YES</td>
+  <td class="ok">YES <span class="dim">0.99</span></td>
+  <td class="mono dim">true / true</td>
+  <td class="mono r">11.0s</td><td class="mono r">5.1s</td></tr><tr><td class="mono">h-partial-score</td><td>partial-violation score</td><td class="mono">2</td>
+  <td class="ok">2</td>
+  <td class="ok">2 <span class="dim">1</span></td>
+  <td class="mono dim">2 / 2</td>
+  <td class="mono r">9.5s</td><td class="mono r">6.4s</td></tr><tr><td class="mono">h-word</td><td>word trap</td><td class="mono">adopt</td>
+  <td class="ok">adopt</td>
+  <td class="ok">adopt <span class="dim">0.96</span></td>
+  <td class="mono dim">adopt / adopt</td>
+  <td class="mono r">9.5s</td><td class="mono r">4.4s</td></tr><tr><td class="mono">h-contradict</td><td>contradictory output</td><td class="mono">NO</td>
+  <td class="ok">NO</td>
+  <td class="ok">NO <span class="dim">0.99</span></td>
+  <td class="mono dim">false / false</td>
+  <td class="mono r">9.7s</td><td class="mono r">4.5s</td></tr><tr><td class="mono">h-stale</td><td>stale information</td><td class="mono">publish</td>
+  <td class="ok">publish</td>
+  <td class="ok">publish <span class="dim">0.95</span></td>
+  <td class="mono dim">publish / publish</td>
+  <td class="mono r">9.1s</td><td class="mono r">4.7s</td></tr><tr><td class="mono">h-sum</td><td>summation</td><td class="mono">split</td>
+  <td class="ok">split</td>
+  <td class="ok">split <span class="dim">0.96</span></td>
+  <td class="mono dim">split / split</td>
+  <td class="mono r">10.1s</td><td class="mono r">4.7s</td></tr><tr><td class="mono">h-expression</td><td>interpreting an expression</td><td class="mono">merge</td>
+  <td class="ok">merge</td>
+  <td class="ok">merge <span class="dim">0.95</span></td>
+  <td class="mono dim">merge / merge</td>
+  <td class="mono r">8.7s</td><td class="mono r">5.2s</td></tr><tr><td class="mono">h-evidence</td><td>insufficient evidence</td><td class="mono">NO</td>
+  <td class="ok">NO</td>
+  <td class="ok">NO <span class="dim">0.99</span></td>
+  <td class="mono dim">false / false</td>
+  <td class="mono r">9.3s</td><td class="mono r">4.7s</td></tr><tr><td class="mono">h-time</td><td>time calculation</td><td class="mono">on-time</td>
+  <td class="ok">on-time</td>
+  <td class="ok">on-time <span class="dim">0.98</span></td>
+  <td class="mono dim">on-time / on-time</td>
+  <td class="mono r">10.4s</td><td class="mono r">4.9s</td></tr><tr><td class="mono">h-band</td><td>band-table application</td><td class="mono">high</td>
+  <td class="ok">high</td>
+  <td class="ok">high <span class="dim">0.98</span></td>
+  <td class="mono dim">high / high</td>
+  <td class="mono r">9.3s</td><td class="mono r">7.0s</td></tr><tr><td class="mono">h-redefine</td><td>definition opened up by a rule</td><td class="mono">4.0.0</td>
+  <td class="ok">4.0.0</td>
+  <td class="ok">4.0.0 <span class="dim">0.98</span></td>
+  <td class="mono dim">4.0.0 / 4.0.0</td>
+  <td class="mono r">11.7s</td><td class="mono r">5.6s</td></tr><tr><td class="mono">h-dup</td><td>duplicate detection</td><td class="mono">YES</td>
+  <td class="ok">YES</td>
+  <td class="ok">YES <span class="dim">0.95</span></td>
+  <td class="mono dim">true / true</td>
+  <td class="mono r">10.7s</td><td class="mono r">4.3s</td></tr><tr><td class="mono">h-retry</td><td>timeout or retry policy</td><td class="mono">accept</td>
+  <td class="ok">accept</td>
+  <td class="ok">accept <span class="dim">0.98</span></td>
+  <td class="mono dim">accept / accept</td>
+  <td class="mono r">11.0s</td><td class="mono r">5.9s</td></tr><tr><td class="mono">h-p95</td><td>percentile table</td><td class="mono">block</td>
+  <td class="ok">block</td>
+  <td class="ok">block <span class="dim">0.98</span></td>
+  <td class="mono dim">block / block</td>
+  <td class="mono r">11.2s</td><td class="mono r">7.4s</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Compared with the easy set</h2>
+  <div class="scroll"><table><thead><tr><th></th><th class="r">baseline · easy</th><th class="r">baseline · hard</th><th class="r">cev · easy</th><th class="r">cev · hard</th></tr></thead><tbody>
+  <tr><td>accuracy</td><td class="mono r">100%</td><td class="mono r">100%</td><td class="mono r">100%</td><td class="mono r">97%</td></tr>
+  <tr><td>auto-executed wrong</td><td class="mono r">0</td><td class="mono r">0</td><td class="mono r">0</td><td class="mono r">0</td></tr>
+  <tr><td>auto rate</td><td class="mono r">93%</td><td class="mono r">97%</td><td class="mono r">90%</td><td class="mono r">93%</td></tr>
+  <tr><td>auto precision</td><td class="mono r">100%</td><td class="mono r">100%</td><td class="mono r">100%</td><td class="mono r">100%</td></tr>
+  <tr><td>median latency</td><td class="mono r">9.8s</td><td class="mono r">10.3s</td><td class="mono r">4.7s</td><td class="mono r">5.2s</td></tr>
+  </tbody></table></div>
+</section>
+<section>
+  <h2>8. Ways to make it faster</h2>
+  <p class="lede">The same 10 decisions, run sequentially, changing only how they're executed. cold is the current approach, launching a fresh CLI per decision; warm keeps a Claude process and a Codex server running and only sends the question.</p>
+  <svg viewBox="0 0 640 178" role="img" class="chart"><text x="200" y="21" class="lab" text-anchor="end">cold: new processes per decision</text><rect x="210.0" y="10" width="360.0" height="20" rx="2" fill="var(--c-base)"><title>median ms 4,507</title></rect><text x="578.0" y="21" class="num">4.5s · 1.0×</text><text x="200" y="55" class="lab" text-anchor="end">warm: pre-started processes</text><rect x="210.0" y="44" width="235.3" height="20" rx="2" fill="var(--c-cev)"><title>median ms 2,946</title></rect><text x="453.3" y="55" class="num">2.9s · 1.5×</text><text x="200" y="89" class="lab" text-anchor="end">warm + Codex luna</text><rect x="210.0" y="78" width="152.5" height="20" rx="2" fill="var(--c-cev)"><title>median ms 1,909</title></rect><text x="370.5" y="89" class="num">1.9s · 2.4×</text><text x="200" y="123" class="lab" text-anchor="end">warm + Claude Sonnet</text><rect x="210.0" y="112" width="220.2" height="20" rx="2" fill="var(--c-cev)"><title>median ms 2,757</title></rect><text x="438.2" y="123" class="num">2.8s · 1.6×</text><text x="200" y="157" class="lab" text-anchor="end">warm, Claude only</text><rect x="210.0" y="146" width="116.9" height="20" rx="2" fill="var(--c-cev)"><title>median ms 1,463</title></rect><text x="334.9" y="157" class="num">1.5s · 3.1×</text></svg>
+  <div class="scroll"><table><thead><tr><th>method</th><th class="r">median</th><th class="r">p90</th><th class="r">Claude</th><th class="r">Codex</th><th class="r">correct</th></tr></thead><tbody>
+  <tr><td>cold: new processes per decision</td><td class="mono r">4.5s</td><td class="mono r">7.3s</td><td class="mono r">2.9s</td><td class="mono r">4.5s</td><td class="mono r">100%</td></tr><tr><td>warm: pre-started processes</td><td class="mono r">2.9s</td><td class="mono r">4.4s</td><td class="mono r">1.4s</td><td class="mono r">2.9s</td><td class="mono r">100%</td></tr><tr><td>warm + Codex luna</td><td class="mono r">1.9s</td><td class="mono r">5.5s</td><td class="mono r">1.4s</td><td class="mono r">1.9s</td><td class="mono r">100%</td></tr><tr><td>warm + Claude Sonnet</td><td class="mono r">2.8s</td><td class="mono r">4.5s</td><td class="mono r">1.9s</td><td class="mono r">2.8s</td><td class="mono r">100%</td></tr><tr><td>warm, Claude only</td><td class="mono r">1.5s</td><td class="mono r">4.8s</td><td class="mono r">1.5s</td><td class="mono r">–</td><td class="mono r">100%</td></tr>
+  </tbody></table></div>
+</section>
+<section>
+  <h2>Reading these results</h2>
+  <ul>
+    <li>The decision problems and answers were written by me (Claude). They're designed to be answerable from the rules alone, but there may be a bias in Claude's favor.</li>
+    <li>30 decisions is a small sample. Look at the large differences (total tokens, latency, whether wrong answers occur) rather than individual percentages.</li>
+    <li>Token counts are as reported by the CLIs. Main-conversation tokens are estimated: character count times a measured ratio (0.40 tokens per character).</li>
+    <li>Baseline output includes the currently enabled output style (Learning, with insight blocks). It was left on because that matches real sessions.</li>
+    <li>Runs use subscription quota. Timings vary with network and server load, and include the few seconds spent launching a fresh process per call.</li>
+  </ul>
+</section>
+</main>

@@ -1,0 +1,1102 @@
+{
+ "at": "2026-10-30T00:45:09.113Z",
+ "cases": [
+  "pr-1",
+  "ci-1",
+  "rel-1",
+  "mod-1",
+  "hyg-1",
+  "h-bound",
+  "h-conflict-esc",
+  "h-benign-inject",
+  "h-contradict",
+  "h-band"
+ ],
+ "variants": [
+  {
+   "name": "cold: new processes per decision",
+   "rows": [
+    {
+     "id": "pr-1",
+     "ms": 3976,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2919,
+       "tokensIn": 1632,
+       "tokensOut": 136
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3966,
+       "tokensIn": 6185,
+       "tokensOut": 66
+      }
+     },
+     "answer": "merge",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "ci-1",
+     "ms": 4379,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2705,
+       "tokensIn": 1634,
+       "tokensOut": 132
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4375,
+       "tokensIn": 6186,
+       "tokensOut": 65
+      }
+     },
+     "answer": "quarantine",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "rel-1",
+     "ms": 4365,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2876,
+       "tokensIn": 1656,
+       "tokensOut": 151
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4358,
+       "tokensIn": 6200,
+       "tokensOut": 79
+      }
+     },
+     "answer": "2.4.0",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "mod-1",
+     "ms": 4328,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2906,
+       "tokensIn": 1668,
+       "tokensOut": 138
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4321,
+       "tokensIn": 6183,
+       "tokensOut": 66
+      }
+     },
+     "answer": "warning",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "hyg-1",
+     "ms": 4708,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2807,
+       "tokensIn": 1596,
+       "tokensOut": 145
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4702,
+       "tokensIn": 6168,
+       "tokensOut": 77
+      }
+     },
+     "answer": "mark-stale",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-bound",
+     "ms": 5668,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2907,
+       "tokensIn": 1450,
+       "tokensOut": 137
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5661,
+       "tokensIn": 6087,
+       "tokensOut": 80
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-conflict-esc",
+     "ms": 7279,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 5862,
+       "tokensIn": 1586,
+       "tokensOut": 443
+      },
+      "codex": {
+       "ok": true,
+       "ms": 7273,
+       "tokensIn": 6146,
+       "tokensOut": 165
+      }
+     },
+     "answer": "cla-needed",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-benign-inject",
+     "ms": 5651,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3477,
+       "tokensIn": 1653,
+       "tokensOut": 165
+      },
+      "codex": {
+       "ok": true,
+       "ms": 5633,
+       "tokensIn": 6192,
+       "tokensOut": 53
+      }
+     },
+     "answer": "security",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-contradict",
+     "ms": 4635,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2615,
+       "tokensIn": 1478,
+       "tokensOut": 103
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4628,
+       "tokensIn": 6111,
+       "tokensOut": 45
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-band",
+     "ms": 4362,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2718,
+       "tokensIn": 1585,
+       "tokensOut": 132
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4347,
+       "tokensIn": 6160,
+       "tokensOut": 64
+      }
+     },
+     "answer": "high",
+     "escalate": false,
+     "right": true
+    }
+   ]
+  },
+  {
+   "name": "warm: pre-started processes",
+   "rows": [
+    {
+     "id": "pr-1",
+     "ms": 3187,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1371,
+       "via": "warm",
+       "tokensIn": 1176,
+       "tokensOut": 94
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3183,
+       "via": "warm",
+       "tokensIn": 6185,
+       "tokensOut": 66
+      }
+     },
+     "answer": "merge",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "ci-1",
+     "ms": 2148,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1741,
+       "via": "warm",
+       "tokensIn": 1178,
+       "tokensOut": 154
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2146,
+       "via": "warm",
+       "tokensIn": 6186,
+       "tokensOut": 65
+      }
+     },
+     "answer": "quarantine",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "rel-1",
+     "ms": 4088,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1386,
+       "via": "warm",
+       "tokensIn": 1200,
+       "tokensOut": 108
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4086,
+       "via": "warm",
+       "tokensIn": 6200,
+       "tokensOut": 79
+      }
+     },
+     "answer": "2.4.0",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "mod-1",
+     "ms": 2971,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1330,
+       "via": "warm",
+       "tokensIn": 1209,
+       "tokensOut": 100
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2969,
+       "via": "warm",
+       "tokensIn": 6183,
+       "tokensOut": 66
+      }
+     },
+     "answer": "warning",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "hyg-1",
+     "ms": 3535,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1325,
+       "via": "warm",
+       "tokensIn": 1140,
+       "tokensOut": 104
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3532,
+       "via": "warm",
+       "tokensIn": 5957,
+       "tokensOut": 68
+      }
+     },
+     "answer": "mark-stale",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-bound",
+     "ms": 2921,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1437,
+       "via": "warm",
+       "tokensIn": 1008,
+       "tokensOut": 115
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2920,
+       "via": "warm",
+       "tokensIn": 6087,
+       "tokensOut": 82
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-conflict-esc",
+     "ms": 4370,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4265,
+       "via": "warm",
+       "tokensIn": 1133,
+       "tokensOut": 398
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4366,
+       "via": "warm",
+       "tokensIn": 6146,
+       "tokensOut": 131
+      }
+     },
+     "answer": "cla-needed",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-benign-inject",
+     "ms": 2326,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1718,
+       "via": "warm",
+       "tokensIn": 1197,
+       "tokensOut": 74
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2323,
+       "via": "warm",
+       "tokensIn": 6192,
+       "tokensOut": 53
+      }
+     },
+     "answer": "security",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-contradict",
+     "ms": 2370,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1164,
+       "via": "warm",
+       "tokensIn": 1036,
+       "tokensOut": 57
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2363,
+       "via": "warm",
+       "tokensIn": 6111,
+       "tokensOut": 45
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-band",
+     "ms": 2276,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1229,
+       "via": "warm",
+       "tokensIn": 1129,
+       "tokensOut": 89
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2274,
+       "via": "warm",
+       "tokensIn": 6160,
+       "tokensOut": 64
+      }
+     },
+     "answer": "high",
+     "escalate": false,
+     "right": true
+    }
+   ]
+  },
+  {
+   "name": "warm + Codex luna",
+   "rows": [
+    {
+     "id": "pr-1",
+     "ms": 1667,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1441,
+       "via": "warm",
+       "tokensIn": 1176,
+       "tokensOut": 94
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1660,
+       "via": "warm",
+       "tokensIn": 6185,
+       "tokensOut": 78
+      }
+     },
+     "answer": "merge",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "ci-1",
+     "ms": 1923,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1428,
+       "via": "warm",
+       "tokensIn": 1178,
+       "tokensOut": 89
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1921,
+       "via": "warm",
+       "tokensIn": 6186,
+       "tokensOut": 65
+      }
+     },
+     "answer": "quarantine",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "rel-1",
+     "ms": 1901,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1382,
+       "via": "warm",
+       "tokensIn": 1200,
+       "tokensOut": 108
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1898,
+       "via": "warm",
+       "tokensIn": 6200,
+       "tokensOut": 73
+      }
+     },
+     "answer": "2.4.0",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "mod-1",
+     "ms": 1994,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1428,
+       "via": "warm",
+       "tokensIn": 1209,
+       "tokensOut": 100
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1992,
+       "via": "warm",
+       "tokensIn": 6183,
+       "tokensOut": 61
+      }
+     },
+     "answer": "warning",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "hyg-1",
+     "ms": 1917,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1385,
+       "via": "warm",
+       "tokensIn": 1140,
+       "tokensOut": 105
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1909,
+       "via": "warm",
+       "tokensIn": 6168,
+       "tokensOut": 57
+      }
+     },
+     "answer": "mark-stale",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-bound",
+     "ms": 1977,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1879,
+       "via": "warm",
+       "tokensIn": 1008,
+       "tokensOut": 134
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1964,
+       "via": "warm",
+       "tokensIn": 6087,
+       "tokensOut": 54
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-conflict-esc",
+     "ms": 5545,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 5542,
+       "via": "warm",
+       "tokensIn": 1133,
+       "tokensOut": 513
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2126,
+       "via": "warm",
+       "tokensIn": 6146,
+       "tokensOut": 58
+      }
+     },
+     "answer": "cla-needed",
+     "escalate": true,
+     "right": true
+    },
+    {
+     "id": "h-benign-inject",
+     "ms": 1752,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1750,
+       "via": "warm",
+       "tokensIn": 1197,
+       "tokensOut": 74
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1523,
+       "via": "warm",
+       "tokensIn": 6192,
+       "tokensOut": 61
+      }
+     },
+     "answer": "security",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-contradict",
+     "ms": 1374,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1210,
+       "via": "warm",
+       "tokensIn": 1036,
+       "tokensOut": 57
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1373,
+       "via": "warm",
+       "tokensIn": 6111,
+       "tokensOut": 45
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-band",
+     "ms": 1868,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1250,
+       "via": "warm",
+       "tokensIn": 1129,
+       "tokensOut": 89
+      },
+      "codex": {
+       "ok": true,
+       "ms": 1866,
+       "via": "warm",
+       "tokensIn": 6160,
+       "tokensOut": 64
+      }
+     },
+     "answer": "high",
+     "escalate": false,
+     "right": true
+    }
+   ]
+  },
+  {
+   "name": "warm + Claude Sonnet",
+   "rows": [
+    {
+     "id": "pr-1",
+     "ms": 2534,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1933,
+       "via": "warm",
+       "tokensIn": 1180,
+       "tokensOut": 105
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2531,
+       "via": "warm",
+       "tokensIn": 6185,
+       "tokensOut": 66
+      }
+     },
+     "answer": "merge",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "ci-1",
+     "ms": 2599,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2188,
+       "via": "warm",
+       "tokensIn": 1182,
+       "tokensOut": 95
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2595,
+       "via": "warm",
+       "tokensIn": 6186,
+       "tokensOut": 65
+      }
+     },
+     "answer": "quarantine",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "rel-1",
+     "ms": 3547,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2448,
+       "via": "warm",
+       "tokensIn": 1204,
+       "tokensOut": 108
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3545,
+       "via": "warm",
+       "tokensIn": 6200,
+       "tokensOut": 79
+      }
+     },
+     "answer": "2.4.0",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "mod-1",
+     "ms": 2683,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1737,
+       "via": "warm",
+       "tokensIn": 1213,
+       "tokensOut": 95
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2679,
+       "via": "warm",
+       "tokensIn": 6183,
+       "tokensOut": 66
+      }
+     },
+     "answer": "warning",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "hyg-1",
+     "ms": 3054,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1771,
+       "via": "warm",
+       "tokensIn": 1144,
+       "tokensOut": 119
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3045,
+       "via": "warm",
+       "tokensIn": 6168,
+       "tokensOut": 77
+      }
+     },
+     "answer": "mark-stale",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-bound",
+     "ms": 3268,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1934,
+       "via": "warm",
+       "tokensIn": 1012,
+       "tokensOut": 64
+      },
+      "codex": {
+       "ok": true,
+       "ms": 3266,
+       "via": "warm",
+       "tokensIn": 6087,
+       "tokensOut": 82
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-conflict-esc",
+     "ms": 4523,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 3439,
+       "via": "warm",
+       "tokensIn": 1137,
+       "tokensOut": 317
+      },
+      "codex": {
+       "ok": true,
+       "ms": 4519,
+       "via": "warm",
+       "tokensIn": 6146,
+       "tokensOut": 157
+      }
+     },
+     "answer": "cla-needed",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-benign-inject",
+     "ms": 2830,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 2144,
+       "via": "warm",
+       "tokensIn": 1201,
+       "tokensOut": 74
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2825,
+       "via": "warm",
+       "tokensIn": 6192,
+       "tokensOut": 53
+      }
+     },
+     "answer": "security",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-contradict",
+     "ms": 2548,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1940,
+       "via": "warm",
+       "tokensIn": 1040,
+       "tokensOut": 57
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2544,
+       "via": "warm",
+       "tokensIn": 6111,
+       "tokensOut": 45
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-band",
+     "ms": 2470,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1853,
+       "via": "warm",
+       "tokensIn": 1133,
+       "tokensOut": 89
+      },
+      "codex": {
+       "ok": true,
+       "ms": 2466,
+       "via": "warm",
+       "tokensIn": 6160,
+       "tokensOut": 64
+      }
+     },
+     "answer": "high",
+     "escalate": false,
+     "right": true
+    }
+   ]
+  },
+  {
+   "name": "warm, Claude only",
+   "rows": [
+    {
+     "id": "pr-1",
+     "ms": 1525,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1523,
+       "via": "warm",
+       "tokensIn": 1176,
+       "tokensOut": 105
+      }
+     },
+     "answer": "merge",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "ci-1",
+     "ms": 1870,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1868,
+       "via": "warm",
+       "tokensIn": 1178,
+       "tokensOut": 157
+      }
+     },
+     "answer": "quarantine",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "rel-1",
+     "ms": 1401,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1399,
+       "via": "warm",
+       "tokensIn": 1200,
+       "tokensOut": 108
+      }
+     },
+     "answer": "2.4.0",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "mod-1",
+     "ms": 1399,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1396,
+       "via": "warm",
+       "tokensIn": 1209,
+       "tokensOut": 100
+      }
+     },
+     "answer": "warning",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "hyg-1",
+     "ms": 1278,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1276,
+       "via": "warm",
+       "tokensIn": 1140,
+       "tokensOut": 93
+      }
+     },
+     "answer": "mark-stale",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-bound",
+     "ms": 1647,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1645,
+       "via": "warm",
+       "tokensIn": 1008,
+       "tokensOut": 113
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-conflict-esc",
+     "ms": 4775,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 4773,
+       "via": "warm",
+       "tokensIn": 1133,
+       "tokensOut": 444
+      }
+     },
+     "answer": "cla-needed",
+     "escalate": true,
+     "right": true
+    },
+    {
+     "id": "h-benign-inject",
+     "ms": 1971,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1969,
+       "via": "warm",
+       "tokensIn": 1197,
+       "tokensOut": 74
+      }
+     },
+     "answer": "security",
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-contradict",
+     "ms": 1187,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1185,
+       "via": "warm",
+       "tokensIn": 1036,
+       "tokensOut": 57
+      }
+     },
+     "answer": false,
+     "escalate": false,
+     "right": true
+    },
+    {
+     "id": "h-band",
+     "ms": 1282,
+     "models": {
+      "claude": {
+       "ok": true,
+       "ms": 1279,
+       "via": "warm",
+       "tokensIn": 1129,
+       "tokensOut": 89
+      }
+     },
+     "answer": "high",
+     "escalate": false,
+     "right": true
+    }
+   ]
+  }
+ ]
+}

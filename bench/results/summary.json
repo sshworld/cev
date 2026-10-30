@@ -1,0 +1,1738 @@
+{
+ "summary": {
+  "at": "2026-10-30T00:31:17.664Z",
+  "n": 30,
+  "tokPerChar": 0.4,
+  "fixedOverhead": {
+   "baseline": 34015
+  },
+  "tokens": {
+   "baselineIn": 38912.5,
+   "baselineOut": 409,
+   "claudeIn": 1615,
+   "claudeOut": 143,
+   "codexIn": 6171,
+   "codexOut": 66
+  },
+  "mainCtx": {
+   "base": 409,
+   "cev": 288.5,
+   "cevCall": 225.5,
+   "cevResult": 58
+  },
+  "ms": {
+   "base": {
+    "median": 9810.5,
+    "p90": 11860
+   },
+   "cev": {
+    "median": 4671.5,
+    "p90": 5587
+   },
+   "claude": {
+    "median": 3008,
+    "p90": 3839
+   },
+   "codex": {
+    "median": 4660,
+    "p90": 5584
+   }
+  },
+  "costUSD": {
+   "baseline": 0.21587627333333337
+  },
+  "quality": {
+   "base": {
+    "auto_right": 28,
+    "safe_escalate": 0,
+    "escalate_ok": 2,
+    "caught": 0,
+    "auto_wrong": 0,
+    "n": 30,
+    "correct": 1,
+    "harmful": 0,
+    "autoRate": 0.9333333333333333,
+    "autoPrecision": 1,
+    "humanRate": 0.06666666666666667
+   },
+   "claude": {
+    "auto_right": 27,
+    "safe_escalate": 0,
+    "escalate_ok": 3,
+    "caught": 0,
+    "auto_wrong": 0,
+    "n": 30,
+    "correct": 1,
+    "harmful": 0,
+    "autoRate": 0.9,
+    "autoPrecision": 1,
+    "humanRate": 0.1
+   },
+   "codex": {
+    "auto_right": 27,
+    "safe_escalate": 0,
+    "escalate_ok": 3,
+    "caught": 0,
+    "auto_wrong": 0,
+    "n": 30,
+    "correct": 1,
+    "harmful": 0,
+    "autoRate": 0.9,
+    "autoPrecision": 1,
+    "humanRate": 0.1
+   },
+   "cev": {
+    "auto_right": 27,
+    "safe_escalate": 0,
+    "escalate_ok": 3,
+    "caught": 0,
+    "auto_wrong": 0,
+    "n": 30,
+    "correct": 1,
+    "harmful": 0,
+    "autoRate": 0.9,
+    "autoPrecision": 1,
+    "humanRate": 0.1
+   }
+  },
+  "format": {
+   "baselineParsed": 1,
+   "claudeOk": 1,
+   "codexOk": 1
+  },
+  "grounding": {
+   "claude": 0.9333333333333333,
+   "codex": 1
+  },
+  "agreeRate": 1,
+  "calibration": [
+   {
+    "who": "claude",
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.75,
+      "n": 2,
+      "acc": 1,
+      "conf": 0.65
+     },
+     {
+      "lo": 0.75,
+      "hi": 0.9,
+      "n": 2,
+      "acc": 1,
+      "conf": 0.865
+     },
+     {
+      "lo": 0.9,
+      "hi": 1.01,
+      "n": 23,
+      "acc": 1,
+      "conf": 0.9539130434782609
+     }
+    ]
+   },
+   {
+    "who": "codex",
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.75,
+      "n": 0,
+      "acc": null,
+      "conf": null
+     },
+     {
+      "lo": 0.75,
+      "hi": 0.9,
+      "n": 0,
+      "acc": null,
+      "conf": null
+     },
+     {
+      "lo": 0.9,
+      "hi": 1.01,
+      "n": 27,
+      "acc": 1,
+      "conf": 0.9977777777777779
+     }
+    ]
+   },
+   {
+    "who": "cev",
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.75,
+      "n": 0,
+      "acc": null,
+      "conf": null
+     },
+     {
+      "lo": 0.75,
+      "hi": 0.9,
+      "n": 2,
+      "acc": 1,
+      "conf": 0.815
+     },
+     {
+      "lo": 0.9,
+      "hi": 1.01,
+      "n": 25,
+      "acc": 1,
+      "conf": 0.9767999999999998
+     }
+    ]
+   }
+  ],
+  "stability": {
+   "n": 8,
+   "baseline": 0.875,
+   "cev": 1
+  },
+  "batch": {
+   "questions": 4,
+   "together": {
+    "ms": 4852,
+    "tokens": 8955
+   },
+   "single": {
+    "ms": 23706,
+    "tokens": 31706
+   },
+   "sameAnswers": false
+  }
+ },
+ "rows": [
+  {
+   "id": "pr-1",
+   "domain": "PR review",
+   "type": "choice",
+   "risk": "low",
+   "gold": "merge",
+   "base": {
+    "answer": "merge",
+    "parsed": true,
+    "ms": 10683,
+    "tokensIn": 38936,
+    "tokensOut": 482,
+    "costUSD": 0.32112,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "merge",
+    "conf": 0.94,
+    "agree": true,
+    "escalate": false,
+    "ms": 5280,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "merge",
+    "conf": 0.88,
+    "escalate": false,
+    "ok": true,
+    "ms": 2841,
+    "tokensIn": 1632,
+    "tokensOut": 136,
+    "outcome": "auto_right",
+    "grounded": false
+   },
+   "codex": {
+    "answer": "merge",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5274,
+    "tokensIn": 6185,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 482,
+    "cevCall": 250,
+    "cevResult": 57
+   }
+  },
+  {
+   "id": "pr-2",
+   "domain": "PR review",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "wait",
+   "base": {
+    "answer": "wait",
+    "parsed": true,
+    "ms": 8582,
+    "tokensIn": 38923,
+    "tokensOut": 287,
+    "costUSD": 0.2108566,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "wait",
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 4295,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "wait",
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2799,
+    "tokensIn": 1616,
+    "tokensOut": 138,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "wait",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4290,
+    "tokensIn": 6170,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 287,
+    "cevCall": 237,
+    "cevResult": 69
+   }
+  },
+  {
+   "id": "pr-3",
+   "domain": "PR review",
+   "type": "choice",
+   "risk": "high",
+   "gold": "escalate",
+   "base": {
+    "answer": "wait",
+    "parsed": true,
+    "ms": 12177,
+    "tokensIn": 38902,
+    "tokensOut": 558,
+    "costUSD": 0.2161086,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "abstain",
+    "conf": 0.67,
+    "agree": true,
+    "escalate": true,
+    "ms": 4330,
+    "outcome": "escalate_ok"
+   },
+   "claude": {
+    "answer": "wait",
+    "conf": 0.4,
+    "escalate": true,
+    "ok": true,
+    "ms": 4075,
+    "tokensIn": 1595,
+    "tokensOut": 248,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "abstain",
+    "conf": 1,
+    "escalate": true,
+    "ok": true,
+    "ms": 4326,
+    "tokensIn": 6168,
+    "tokensOut": 98,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 558,
+    "cevCall": 225,
+    "cevResult": 50
+   }
+  },
+  {
+   "id": "issue-1",
+   "domain": "Issue triage",
+   "type": "choice",
+   "risk": "low",
+   "gold": "enhancement",
+   "base": {
+    "answer": "enhancement",
+    "parsed": true,
+    "ms": 14830,
+    "tokensIn": 38919,
+    "tokensOut": 817,
+    "costUSD": 0.2214246,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "enhancement",
+    "conf": 0.81,
+    "agree": true,
+    "escalate": false,
+    "ms": 5298,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "enhancement",
+    "conf": 0.65,
+    "escalate": false,
+    "ok": true,
+    "ms": 4295,
+    "tokensIn": 1620,
+    "tokensOut": 272,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "enhancement",
+    "conf": 0.96,
+    "escalate": false,
+    "ok": true,
+    "ms": 5287,
+    "tokensIn": 6176,
+    "tokensOut": 101,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 817,
+    "cevCall": 247,
+    "cevResult": 56
+   }
+  },
+  {
+   "id": "issue-2",
+   "domain": "Issue triage",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "p2",
+   "base": {
+    "answer": "p2",
+    "parsed": true,
+    "ms": 8979,
+    "tokensIn": 38911,
+    "tokensOut": 321,
+    "costUSD": 0.2114406,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "p2",
+    "conf": 0.95,
+    "agree": true,
+    "escalate": false,
+    "ms": 4596,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "p2",
+    "conf": 0.9,
+    "escalate": false,
+    "ok": true,
+    "ms": 3839,
+    "tokensIn": 1604,
+    "tokensOut": 217,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "p2",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4592,
+    "tokensIn": 6172,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 321,
+    "cevCall": 217,
+    "cevResult": 71
+   }
+  },
+  {
+   "id": "issue-3",
+   "domain": "Issue triage",
+   "type": "bool",
+   "risk": "medium",
+   "gold": true,
+   "base": {
+    "answer": true,
+    "parsed": true,
+    "ms": 8616,
+    "tokensIn": 38908,
+    "tokensOut": 204,
+    "costUSD": 0.2090766,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": true,
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 5587,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": true,
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2736,
+    "tokensIn": 1491,
+    "tokensOut": 115,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": true,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5584,
+    "tokensIn": 6117,
+    "tokensOut": 54,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 204,
+    "cevCall": 206,
+    "cevResult": 60
+   }
+  },
+  {
+   "id": "ci-1",
+   "domain": "CI failures",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "quarantine",
+   "base": {
+    "answer": "quarantine",
+    "parsed": true,
+    "ms": 9603,
+    "tokensIn": 38936,
+    "tokensOut": 362,
+    "costUSD": 0.2124606,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "quarantine",
+    "conf": 0.95,
+    "agree": true,
+    "escalate": false,
+    "ms": 5039,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "quarantine",
+    "conf": 0.9,
+    "escalate": false,
+    "ok": true,
+    "ms": 2863,
+    "tokensIn": 1634,
+    "tokensOut": 132,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "quarantine",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5035,
+    "tokensIn": 6186,
+    "tokensOut": 65,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 362,
+    "cevCall": 256,
+    "cevResult": 56
+   }
+  },
+  {
+   "id": "ci-2",
+   "domain": "CI failures",
+   "type": "bool",
+   "risk": "high",
+   "gold": true,
+   "base": {
+    "answer": true,
+    "parsed": true,
+    "ms": 9572,
+    "tokensIn": 38914,
+    "tokensOut": 340,
+    "costUSD": 0.2118446,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": true,
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 5194,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": true,
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2930,
+    "tokensIn": 1495,
+    "tokensOut": 111,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": true,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5123,
+    "tokensIn": 6121,
+    "tokensOut": 54,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 340,
+    "cevCall": 208,
+    "cevResult": 66
+   }
+  },
+  {
+   "id": "ci-3",
+   "domain": "CI failures",
+   "type": "choice",
+   "risk": "low",
+   "gold": "rerun",
+   "base": {
+    "answer": "rerun",
+    "parsed": true,
+    "ms": 9939,
+    "tokensIn": 38906,
+    "tokensOut": 416,
+    "costUSD": 0.2133006,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "rerun",
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 5359,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "rerun",
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2991,
+    "tokensIn": 1617,
+    "tokensOut": 152,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "rerun",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5356,
+    "tokensIn": 6169,
+    "tokensOut": 68,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 416,
+    "cevCall": 220,
+    "cevResult": 74
+   }
+  },
+  {
+   "id": "dep-1",
+   "domain": "Dependency updates",
+   "type": "choice",
+   "risk": "low",
+   "gold": "auto-merge",
+   "base": {
+    "answer": "auto-merge",
+    "parsed": true,
+    "ms": 7834,
+    "tokensIn": 38891,
+    "tokensOut": 242,
+    "costUSD": 0.20970060000000001,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "auto-merge",
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 4380,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "auto-merge",
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 3018,
+    "tokensIn": 1599,
+    "tokensOut": 155,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "auto-merge",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4376,
+    "tokensIn": 6152,
+    "tokensOut": 81,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 242,
+    "cevCall": 181,
+    "cevResult": 66
+   }
+  },
+  {
+   "id": "dep-2",
+   "domain": "Dependency updates",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "manual-review",
+   "base": {
+    "answer": "manual-review",
+    "parsed": true,
+    "ms": 9682,
+    "tokensIn": 38953,
+    "tokensOut": 417,
+    "costUSD": 0.2136966,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "manual-review",
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4341,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "manual-review",
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 2903,
+    "tokensIn": 1660,
+    "tokensOut": 146,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "manual-review",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4337,
+    "tokensIn": 6188,
+    "tokensOut": 73,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 417,
+    "cevCall": 252,
+    "cevResult": 58
+   }
+  },
+  {
+   "id": "dep-3",
+   "domain": "Dependency updates",
+   "type": "bool",
+   "risk": "high",
+   "gold": true,
+   "base": {
+    "answer": true,
+    "parsed": true,
+    "ms": 10077,
+    "tokensIn": 38933,
+    "tokensOut": 421,
+    "costUSD": 0.21361660000000002,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": true,
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 4181,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": true,
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2938,
+    "tokensIn": 1514,
+    "tokensOut": 126,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": true,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4178,
+    "tokensIn": 6131,
+    "tokensOut": 61,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 421,
+    "cevCall": 211,
+    "cevResult": 71
+   }
+  },
+  {
+   "id": "rel-1",
+   "domain": "Release versioning",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "2.4.0",
+   "base": {
+    "answer": "2.4.0",
+    "parsed": true,
+    "ms": 10338,
+    "tokensIn": 38939,
+    "tokensOut": 422,
+    "costUSD": 0.2136846,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "2.4.0",
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 4443,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "2.4.0",
+    "conf": 0.96,
+    "escalate": false,
+    "ok": true,
+    "ms": 2957,
+    "tokensIn": 1656,
+    "tokensOut": 151,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "2.4.0",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4439,
+    "tokensIn": 6200,
+    "tokensOut": 79,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 422,
+    "cevCall": 239,
+    "cevResult": 64
+   }
+  },
+  {
+   "id": "rel-2",
+   "domain": "Release versioning",
+   "type": "choice",
+   "risk": "high",
+   "gold": "5.0.0",
+   "base": {
+    "answer": "5.0.0",
+    "parsed": true,
+    "ms": 11272,
+    "tokensIn": 38947,
+    "tokensOut": 516,
+    "costUSD": 0.2156286,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "5.0.0",
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4619,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "5.0.0",
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 3008,
+    "tokensIn": 1664,
+    "tokensOut": 136,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "5.0.0",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4598,
+    "tokensIn": 6209,
+    "tokensOut": 70,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 516,
+    "cevCall": 228,
+    "cevResult": 47
+   }
+  },
+  {
+   "id": "rel-3",
+   "domain": "Release versioning",
+   "type": "bool",
+   "risk": "medium",
+   "gold": false,
+   "base": {
+    "answer": false,
+    "parsed": true,
+    "ms": 10532,
+    "tokensIn": 37920,
+    "tokensOut": 445,
+    "costUSD": 0.2105322,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": false,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4368,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": false,
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 3008,
+    "tokensIn": 1490,
+    "tokensOut": 137,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": false,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4360,
+    "tokensIn": 6124,
+    "tokensOut": 49,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 445,
+    "cevCall": 206,
+    "cevResult": 62
+   }
+  },
+  {
+   "id": "sec-1",
+   "domain": "Security severity",
+   "type": "choice",
+   "risk": "high",
+   "gold": "high",
+   "base": {
+    "answer": "high",
+    "parsed": true,
+    "ms": 7794,
+    "tokensIn": 38904,
+    "tokensOut": 203,
+    "costUSD": 0.2090246,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "high",
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4724,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "high",
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 3141,
+    "tokensIn": 1616,
+    "tokensOut": 138,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "high",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4722,
+    "tokensIn": 6181,
+    "tokensOut": 60,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 203,
+    "cevCall": 190,
+    "cevResult": 52
+   }
+  },
+  {
+   "id": "sec-2",
+   "domain": "Security severity",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "public-issue",
+   "base": {
+    "answer": "public-issue",
+    "parsed": true,
+    "ms": 10531,
+    "tokensIn": 38903,
+    "tokensOut": 437,
+    "costUSD": 0.2136966,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "public-issue",
+    "conf": 0.93,
+    "agree": true,
+    "escalate": false,
+    "ms": 4780,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "public-issue",
+    "conf": 0.85,
+    "escalate": false,
+    "ok": true,
+    "ms": 3742,
+    "tokensIn": 1617,
+    "tokensOut": 195,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "public-issue",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4776,
+    "tokensIn": 6174,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 437,
+    "cevCall": 261,
+    "cevResult": 58
+   }
+  },
+  {
+   "id": "sec-3",
+   "domain": "Security severity",
+   "type": "choice",
+   "risk": "high",
+   "gold": "escalate",
+   "base": {
+    "answer": "abstain",
+    "parsed": true,
+    "ms": 10720,
+    "tokensIn": 38921,
+    "tokensOut": 485,
+    "costUSD": 0.21480059999999998,
+    "outcome": "escalate_ok"
+   },
+   "cev": {
+    "answer": "abstain",
+    "conf": 0.75,
+    "agree": true,
+    "escalate": true,
+    "ms": 5935,
+    "outcome": "escalate_ok"
+   },
+   "claude": {
+    "answer": "abstain",
+    "conf": 0.5,
+    "escalate": true,
+    "ok": true,
+    "ms": 3365,
+    "tokensIn": 1614,
+    "tokensOut": 195,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "abstain",
+    "conf": 1,
+    "escalate": true,
+    "ok": true,
+    "ms": 5909,
+    "tokensIn": 6179,
+    "tokensOut": 87,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 485,
+    "cevCall": 244,
+    "cevResult": 58
+   }
+  },
+  {
+   "id": "mod-1",
+   "domain": "Community moderation",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "warning",
+   "base": {
+    "answer": "warning",
+    "parsed": true,
+    "ms": 9001,
+    "tokensIn": 38519,
+    "tokensOut": 295,
+    "costUSD": 0.20778459999999999,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "warning",
+    "conf": 0.97,
+    "agree": true,
+    "escalate": false,
+    "ms": 4375,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "warning",
+    "conf": 0.93,
+    "escalate": false,
+    "ok": true,
+    "ms": 3211,
+    "tokensIn": 1668,
+    "tokensOut": 143,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "warning",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4370,
+    "tokensIn": 6183,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 295,
+    "cevCall": 236,
+    "cevResult": 56
+   }
+  },
+  {
+   "id": "mod-2",
+   "domain": "Community moderation",
+   "type": "choice",
+   "risk": "low",
+   "gold": "keep-open",
+   "base": {
+    "answer": "keep-open",
+    "parsed": true,
+    "ms": 11192,
+    "tokensIn": 38894,
+    "tokensOut": 448,
+    "costUSD": 0.2138446,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "keep-open",
+    "conf": 0.82,
+    "agree": true,
+    "escalate": false,
+    "ms": 5223,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "keep-open",
+    "conf": 0.65,
+    "escalate": false,
+    "ok": true,
+    "ms": 3368,
+    "tokensIn": 1598,
+    "tokensOut": 180,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "keep-open",
+    "conf": 0.98,
+    "escalate": false,
+    "ok": true,
+    "ms": 5221,
+    "tokensIn": 6144,
+    "tokensOut": 91,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 448,
+    "cevCall": 196,
+    "cevResult": 54
+   }
+  },
+  {
+   "id": "mod-3",
+   "domain": "Community moderation",
+   "type": "bool",
+   "risk": "medium",
+   "gold": false,
+   "base": {
+    "answer": false,
+    "parsed": true,
+    "ms": 11860,
+    "tokensIn": 38929,
+    "tokensOut": 411,
+    "costUSD": 0.2133846,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": false,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 5538,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": false,
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 3372,
+    "tokensIn": 1519,
+    "tokensOut": 116,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": false,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5531,
+    "tokensIn": 6138,
+    "tokensOut": 58,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 411,
+    "cevCall": 223,
+    "cevResult": 66
+   }
+  },
+  {
+   "id": "agent-1",
+   "domain": "Agent task routing",
+   "type": "bool",
+   "risk": "medium",
+   "gold": true,
+   "base": {
+    "answer": true,
+    "parsed": true,
+    "ms": 8224,
+    "tokensIn": 37962,
+    "tokensOut": 243,
+    "costUSD": 0.2068282,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": true,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 6878,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": true,
+    "conf": 0.97,
+    "escalate": false,
+    "ok": true,
+    "ms": 2858,
+    "tokensIn": 1534,
+    "tokensOut": 123,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": true,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 6870,
+    "tokensIn": 6149,
+    "tokensOut": 56,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 243,
+    "cevCall": 261,
+    "cevResult": 71
+   }
+  },
+  {
+   "id": "agent-2",
+   "domain": "Agent task routing",
+   "type": "choice",
+   "risk": "high",
+   "gold": "human",
+   "base": {
+    "answer": "human",
+    "parsed": true,
+    "ms": 11184,
+    "tokensIn": 38931,
+    "tokensOut": 453,
+    "costUSD": 0.2142406,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "human",
+    "conf": 0.96,
+    "agree": true,
+    "escalate": false,
+    "ms": 5380,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "human",
+    "conf": 0.92,
+    "escalate": false,
+    "ok": true,
+    "ms": 2908,
+    "tokensIn": 1623,
+    "tokensOut": 143,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "human",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 5377,
+    "tokensIn": 6181,
+    "tokensOut": 61,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 453,
+    "cevCall": 252,
+    "cevResult": 67
+   }
+  },
+  {
+   "id": "agent-3",
+   "domain": "Agent task routing",
+   "type": "choice",
+   "risk": "medium",
+   "gold": "escalate",
+   "base": {
+    "answer": "abstain",
+    "parsed": true,
+    "ms": 8540,
+    "tokensIn": 38935,
+    "tokensOut": 250,
+    "costUSD": 0.2102126,
+    "outcome": "escalate_ok"
+   },
+   "cev": {
+    "answer": "abstain",
+    "conf": 0.5,
+    "agree": true,
+    "escalate": true,
+    "ms": 4969,
+    "outcome": "escalate_ok"
+   },
+   "claude": {
+    "answer": "retry",
+    "conf": 0.5,
+    "escalate": true,
+    "ok": true,
+    "ms": 3224,
+    "tokensIn": 1627,
+    "tokensOut": 167,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "abstain",
+    "conf": 1,
+    "escalate": true,
+    "ok": true,
+    "ms": 4929,
+    "tokensIn": 6182,
+    "tokensOut": 75,
+    "outcome": "escalate_ok",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 250,
+    "cevCall": 242,
+    "cevResult": 55
+   }
+  },
+  {
+   "id": "hyg-1",
+   "domain": "Repo hygiene",
+   "type": "choice",
+   "risk": "low",
+   "gold": "mark-stale",
+   "base": {
+    "answer": "mark-stale",
+    "parsed": true,
+    "ms": 9961,
+    "tokensIn": 38891,
+    "tokensOut": 407,
+    "costUSD": 0.2130006,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": "mark-stale",
+    "conf": 0.97,
+    "agree": true,
+    "escalate": false,
+    "ms": 4808,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": "mark-stale",
+    "conf": 0.93,
+    "escalate": false,
+    "ok": true,
+    "ms": 3047,
+    "tokensIn": 1596,
+    "tokensOut": 147,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": "mark-stale",
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4805,
+    "tokensIn": 6168,
+    "tokensOut": 77,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 407,
+    "cevCall": 196,
+    "cevResult": 70
+   }
+  },
+  {
+   "id": "hyg-2",
+   "domain": "Repo hygiene",
+   "type": "bool",
+   "risk": "medium",
+   "gold": false,
+   "base": {
+    "answer": false,
+    "parsed": true,
+    "ms": 9609,
+    "tokensIn": 38872,
+    "tokensOut": 374,
+    "costUSD": 0.21218859999999998,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": false,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4428,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": false,
+    "conf": 0.98,
+    "escalate": false,
+    "ok": true,
+    "ms": 2784,
+    "tokensIn": 1453,
+    "tokensOut": 107,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": false,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4423,
+    "tokensIn": 6091,
+    "tokensOut": 47,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 374,
+    "cevCall": 160,
+    "cevResult": 52
+   }
+  },
+  {
+   "id": "hyg-3",
+   "domain": "Repo hygiene",
+   "type": "bool",
+   "risk": "low",
+   "gold": false,
+   "base": {
+    "answer": false,
+    "parsed": true,
+    "ms": 8506,
+    "tokensIn": 37898,
+    "tokensOut": 259,
+    "costUSD": 0.2066362,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": false,
+    "conf": 0.98,
+    "agree": true,
+    "escalate": false,
+    "ms": 4087,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": false,
+    "conf": 0.95,
+    "escalate": false,
+    "ok": true,
+    "ms": 2894,
+    "tokensIn": 1468,
+    "tokensOut": 106,
+    "outcome": "auto_right",
+    "grounded": false
+   },
+   "codex": {
+    "answer": false,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4079,
+    "tokensIn": 6111,
+    "tokensOut": 46,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 259,
+    "cevCall": 177,
+    "cevResult": 47
+   }
+  },
+  {
+   "id": "score-1",
+   "domain": "Rubric scoring",
+   "type": "score",
+   "risk": "medium",
+   "gold": 4,
+   "base": {
+    "answer": 4,
+    "parsed": true,
+    "ms": 7669,
+    "tokensIn": 38919,
+    "tokensOut": 159,
+    "costUSD": 0.2082646,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": 4,
+    "conf": 1,
+    "agree": true,
+    "escalate": false,
+    "ms": 4456,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": 4,
+    "conf": 0.99,
+    "escalate": false,
+    "ok": true,
+    "ms": 2760,
+    "tokensIn": 1634,
+    "tokensOut": 130,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": 4,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4438,
+    "tokensIn": 6188,
+    "tokensOut": 78,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 159,
+    "cevCall": 226,
+    "cevResult": 45
+   }
+  },
+  {
+   "id": "score-2",
+   "domain": "Rubric scoring",
+   "type": "score",
+   "risk": "medium",
+   "gold": 2,
+   "base": {
+    "answer": 2,
+    "parsed": true,
+    "ms": 9420,
+    "tokensIn": 38892,
+    "tokensOut": 363,
+    "costUSD": 0.2121286,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": 2,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4245,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": 2,
+    "conf": 0.98,
+    "escalate": false,
+    "ok": true,
+    "ms": 3252,
+    "tokensIn": 1591,
+    "tokensOut": 154,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": 2,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4243,
+    "tokensIn": 6168,
+    "tokensOut": 66,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 363,
+    "cevCall": 200,
+    "cevResult": 53
+   }
+  },
+  {
+   "id": "score-3",
+   "domain": "Rubric scoring",
+   "type": "score",
+   "risk": "medium",
+   "gold": 3,
+   "base": {
+    "answer": 3,
+    "parsed": true,
+    "ms": 10285,
+    "tokensIn": 38991,
+    "tokensOut": 505,
+    "costUSD": 0.2157606,
+    "outcome": "auto_right"
+   },
+   "cev": {
+    "answer": 3,
+    "conf": 0.99,
+    "agree": true,
+    "escalate": false,
+    "ms": 4438,
+    "outcome": "auto_right"
+   },
+   "claude": {
+    "answer": 3,
+    "conf": 0.98,
+    "escalate": false,
+    "ok": true,
+    "ms": 3361,
+    "tokensIn": 1706,
+    "tokensOut": 184,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "codex": {
+    "answer": 3,
+    "conf": 1,
+    "escalate": false,
+    "ok": true,
+    "ms": 4397,
+    "tokensIn": 6238,
+    "tokensOut": 78,
+    "outcome": "auto_right",
+    "grounded": true
+   },
+   "mainCtx": {
+    "base": 505,
+    "cevCall": 279,
+    "cevResult": 66
+   }
+  }
+ ]
+}
