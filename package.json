@@ -1,6 +1,6 @@
 {
   "name": "cev",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Hand bounded decisions to a Claude + Codex panel over MCP: typed questions in, calibrated answers out, escalate when unsure.",
   "type": "module",
   "license": "MIT",

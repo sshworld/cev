@@ -1,7 +1,13 @@
 // MCP tool definition, shared by the daemon (/mcp) and the per-session stdio bridge (cli/mcp.mjs).
-export const VERSION = "0.3.0";
+export const VERSION = "0.3.1";
 
-export const INSTRUCTIONS = "cev_decide answers bounded decisions from the state you pass. Respect escalate=true.";
+// Clients load this at session start even while the tool itself is deferred, so it says when to reach for cev.
+export const INSTRUCTIONS =
+  "Use cev_decide before acting on a bounded judgment you could get wrong: " +
+  "go/no-go before hard-to-reverse actions (deploy, push, send, delete), " +
+  "triage or routing among fixed options, and rubric scoring. " +
+  "Gather the facts yourself first; cev sees only the state you pass. " +
+  "If escalate=true, do not act on the answer — ask the user.";
 
 export const TOOL = {
   name: "cev_decide",
