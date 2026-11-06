@@ -23,8 +23,8 @@ async function rpc(sid, msg, client) {
 }
 
 // Memory of the daemon and its child processes (MB)
-function memory() {
-  const pid = JSON.parse(execSync(`curl -s ${BASE}/health`).toString()).pid;
+async function memory() {
+  const pid = Number((await (await fetch(`${BASE}/health`)).json()).pid);
   const rows = execSync("ps -axo pid=,ppid=,rss=,comm=").toString().trim().split("\n").map((l) => l.trim().split(/\s+/));
   const tree = new Set([String(pid)]);
   for (let grew = true; grew; ) {
@@ -35,7 +35,7 @@ function memory() {
   return { procs: mine.length, mb: Math.round(mine.reduce((a, [, , rss]) => a + Number(rss), 0) / 1024) };
 }
 
-const before = memory();
+const before = await memory();
 const t0 = performance.now();
 const jobs = Array.from({ length: SESSIONS }, async (_, s) => {
   const client = `session-${s + 1}`;
@@ -54,7 +54,7 @@ const jobs = Array.from({ length: SESSIONS }, async (_, s) => {
 });
 const rows = (await Promise.all(jobs)).flat();
 const totalMs = Math.round(performance.now() - t0);
-const after = memory();
+const after = await memory();
 const health = await (await fetch(`${BASE}/health`)).json();
 
 const sorted = rows.map((r) => r.wallMs).sort((a, b) => a - b);

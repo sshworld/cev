@@ -3,7 +3,7 @@
 // request:  { state, rules?, questions: [{ id, type: "choice"|"bool"|"score", ask, options?, scale?, risk? }] }
 // response: { answers: { [id]: { answer, conf, agree, escalate, why, missing } }, votes, meta }
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync, appendFileSync, existsSync, symlinkSync } from "node:fs";
+import { mkdirSync, writeFileSync, appendFileSync, existsSync, symlinkSync, rmSync, lstatSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -25,19 +25,44 @@ Read STATE and RULES, then answer every QUESTION using only them.
 - Reply with the JSON object only.`;
 
 // ── Which models to ask ──
-// Warm, both models take ~2–4s per decision (Codex is the slower one); Claude alone ~1.5s.
-// Ask Claude alone only when every question is low-risk. Score questions split the models most often, so they always get both.
-export function route(req) {
+// Claude answers every decision. Codex is an opt-in second opinion (CEV_CODEX=1): in the benchmarks it caught no
+// confident error lean Claude made, and it roughly doubles latency (warm: Claude ~1.5s, both ~2–4s).
+export const codexEnabled = () => process.env.CEV_CODEX === "1";
+
+// When enabled, keep the routing the panel benchmarks measured: Claude alone only when every question is low-risk
+// and none is a score (scores split the two models most often). Unset risk means medium, so it gets both.
+export function route(req, { codex = codexEnabled() } = {}) {
+  if (!codex) return ["claude"];
   const solo = req.questions.every((q) => q.risk === "low" && q.type !== "score");
   return solo ? ["claude"] : ["claude", "codex"];
 }
 
-// Reject malformed requests before any model is called
+// Reject malformed requests before any model is called. A bad field must fail here, not fall through to a default
+// (an unknown risk would otherwise have no threshold and never escalate).
+export const RISKS = Object.keys(THRESHOLD);
+export const LIMITS = { questions: 20, options: 20, levels: 21 };
+const bad = (msg) => {
+  throw new Error(msg);
+};
 export function checkRequest(req) {
-  if (!req || req.state == null || !Array.isArray(req.questions) || !req.questions.length) throw new Error("need state and questions[]");
+  if (!req || req.state == null || !Array.isArray(req.questions) || !req.questions.length) bad("need state and questions[]");
+  if (req.questions.length > LIMITS.questions) bad(`at most ${LIMITS.questions} questions per request`);
+  const ids = new Set();
   for (const q of req.questions) {
-    if (!q.id || !["choice", "bool", "score"].includes(q.type) || !q.ask) throw new Error(`bad question: ${JSON.stringify(q).slice(0, 120)}`);
-    if (q.type === "choice" && !(Array.isArray(q.options) && q.options.length >= 2)) throw new Error(`${q.id}: choice needs options[]`);
+    if (!q || typeof q.id !== "string" || !q.id || !["choice", "bool", "score"].includes(q.type) || !q.ask) bad(`bad question: ${JSON.stringify(q).slice(0, 120)}`);
+    if (ids.has(q.id)) bad(`duplicate question id ${q.id}`);
+    ids.add(q.id);
+    if (q.risk !== undefined && !RISKS.includes(q.risk)) bad(`${q.id}: risk must be one of ${RISKS.join(", ")}`);
+    if (q.type === "choice") {
+      const o = q.options;
+      if (!(Array.isArray(o) && o.length >= 2)) bad(`${q.id}: choice needs options[]`);
+      if (o.length > LIMITS.options || o.some((x) => typeof x !== "string" || !x) || new Set(o).size !== o.length) bad(`${q.id}: options must be up to ${LIMITS.options} distinct non-empty strings`);
+      if (o.includes("abstain")) bad(`${q.id}: "abstain" is reserved`);
+    }
+    if (q.type === "score" && q.scale !== undefined) {
+      const [lo, hi] = Array.isArray(q.scale) ? q.scale : [];
+      if (q.scale.length !== 2 || !Number.isInteger(lo) || !Number.isInteger(hi) || hi <= lo || hi - lo + 1 > LIMITS.levels) bad(`${q.id}: scale must be [lo, hi] integers with up to ${LIMITS.levels} levels`);
+    }
   }
 }
 
@@ -49,17 +74,36 @@ const levelsOf = (q) => {
   return Array.from({ length: hi - lo + 1 }, (_, i) => String(lo + i));
 };
 const TEXT = { type: "string" };
+const keysOf = (q) => [...(q.type === "choice" ? q.options : levelsOf(q)), "abstain"];
+const fieldOf = (q) => (q.type === "choice" ? "choice" : "score");
+
+// A vote counts only if it has the exact shape the schema promises. The warm Claude path has no schema enforcement,
+// and even strict mode can't bound numbers, so an out-of-range vote is dropped (and so escalates) rather than averaged.
+const isProb = (v) => typeof v === "number" && v >= 0 && v <= 1;
+export function validVote(q, a) {
+  if (!a || typeof a !== "object") return false;
+  // evidence and missing are required by the schema; a vote without them didn't follow it
+  if (typeof a.evidence !== "string" || typeof a.missing !== "string") return false;
+  if (q.type === "bool") return isProb(a.p_yes) && typeof a.abstain === "boolean";
+  const keys = keysOf(q);
+  // Exactly a string key: String(["abstain"]) would pass an includes check yet slip past the === "abstain" test in combine
+  const pick = a[fieldOf(q)];
+  if (typeof pick !== "string" || !keys.includes(pick) || !a.probs || typeof a.probs !== "object") return false;
+  // Weights may be unnormalized (they are normalized before averaging), but must be finite, non-negative and not all zero
+  const w = keys.map((k) => a.probs[k]);
+  return w.every((v) => Number.isFinite(v) && v >= 0) && w.some((v) => v > 0);
+}
 
 export function schemaOf(req) {
   const props = {};
   for (const q of req.questions) {
     if (q.type === "choice") {
-      const keys = [...q.options, "abstain"];
+      const keys = keysOf(q);
       props[q.id] = obj({ choice: { type: "string", enum: keys }, probs: probsOf(keys), evidence: TEXT, missing: TEXT });
     } else if (q.type === "bool") {
       props[q.id] = obj({ p_yes: { type: "number" }, abstain: { type: "boolean" }, evidence: TEXT, missing: TEXT });
     } else if (q.type === "score") {
-      const keys = [...levelsOf(q), "abstain"];
+      const keys = keysOf(q);
       props[q.id] = obj({ score: { type: "string", enum: keys }, probs: probsOf(keys), evidence: TEXT, missing: TEXT });
     } else throw new Error(`unknown question type: ${q.type}`);
   }
@@ -81,10 +125,13 @@ function run(cmd, args, { cwd, env, timeout = 120_000 }) {
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (err += d));
     const timer = setTimeout(() => child.kill("SIGKILL"), timeout);
-    child.on("close", (code) => {
+    const settle = (code) => {
       clearTimeout(timer);
       resolve({ code, out, err, ms: Math.round(performance.now() - t0) });
-    });
+    };
+    // Without an error listener a missing CLI (ENOENT) is an uncaught exception that takes the whole daemon down
+    child.on("error", (e) => ((err += `${cmd}: ${e.message}`), settle(null)));
+    child.on("close", settle);
   });
 }
 
@@ -94,8 +141,13 @@ export function prepare() {
   const mcp = join(HOME, "empty-mcp.json");
   if (!existsSync(mcp)) writeFileSync(mcp, '{"mcpServers":{}}');
   // Codex runs from its own home that shares only auth, without the user's hooks, plugins and memories
+  // lstat, not existsSync: the link dangles when Codex isn't logged in, and re-linking it would throw EEXIST
   const auth = join(CODEX_HOME, "auth.json");
-  if (!existsSync(auth)) symlinkSync(join(homedir(), ".codex", "auth.json"), auth);
+  try {
+    lstatSync(auth);
+  } catch {
+    symlinkSync(join(homedir(), ".codex", "auth.json"), auth);
+  }
   writeFileSync(join(CODEX_HOME, "config.toml"), 'web_search = "disabled"\n');
   writeFileSync(join(HOME, "system.md"), SYSTEM);
   return { mcp };
@@ -124,18 +176,28 @@ export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = 
   prepare();
   const schemaFile = join(RUN, `schema-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
   writeFileSync(schemaFile, JSON.stringify(schemaOf(req)));
-  const r = await run(
-    "codex",
-    ["exec", "--json", "--ephemeral", "--skip-git-repo-check", "-s", "read-only", "-m", model,
-      "-c", `model_instructions_file="${join(HOME, "system.md")}"`, "-c", `model_reasoning_effort="${effort}"`,
-      ...CODEX_OFF.flatMap((k) => ["-c", `${k}=false`]), "--output-schema", schemaFile, promptOf(req)],
-    { cwd: RUN, env: { CODEX_HOME } },
-  );
+  let r;
+  try {
+    r = await run(
+      "codex",
+      ["exec", "--json", "--ephemeral", "--skip-git-repo-check", "-s", "read-only", "-m", model,
+        "-c", `model_instructions_file="${join(HOME, "system.md")}"`, "-c", `model_reasoning_effort="${effort}"`,
+        ...CODEX_OFF.flatMap((k) => ["-c", `${k}=false`]), "--output-schema", schemaFile, promptOf(req)],
+      { cwd: RUN, env: { CODEX_HOME } },
+    );
+  } finally {
+    rmSync(schemaFile, { force: true });
+  }
   let answer = null;
   let usage = {};
   for (const line of r.out.split("\n")) {
     if (!line.startsWith("{")) continue;
-    const ev = JSON.parse(line);
+    let ev;
+    try {
+      ev = JSON.parse(line);
+    } catch {
+      continue;
+    }
     if (ev.type === "item.completed" && ev.item?.type === "agent_message") answer = ev.item.text;
     if (ev.type === "turn.completed") usage = ev.usage;
     if (ev.type === "error" || ev.type === "turn.failed") r.err += JSON.stringify(ev);
@@ -169,8 +231,8 @@ export function groundedIn(state, quote) {
 export function combine(req, votes) {
   const answers = {};
   for (const q of req.questions) {
-    const vs = votes.map((v) => v?.[q.id]).filter(Boolean);
-    const thr = THRESHOLD[q.risk ?? "medium"];
+    const vs = votes.map((v) => v?.[q.id]).filter((a) => validVote(q, a));
+    const thr = THRESHOLD[q.risk ?? "medium"] ?? THRESHOLD.high;
     const evidence = vs.map((v) => v.evidence).find((e) => e && groundedIn(req.state, e)) ?? "";
     const missing = vs.map((v) => v.missing).filter(Boolean).join(" / ");
     let answer, conf, agree;
@@ -185,10 +247,16 @@ export function combine(req, votes) {
       conf = anyAbstain ? 0 : Math.max(p, 1 - p);
       agree = !anyAbstain && vs.every((v) => v.p_yes >= 0.5 === p >= 0.5);
     } else {
-      const field = q.type === "choice" ? "choice" : "score";
-      const dist = mean(vs.map((v) => normalize(v.probs)));
-      answer = argmax(dist);
-      if (q.type === "score" && answer !== "abstain") {
+      const field = fieldOf(q);
+      const keys = keysOf(q);
+      // Average only the allowed keys, so a stray key in probs can never become the answer
+      const dist = mean(vs.map((v) => normalize(Object.fromEntries(keys.map((k) => [k, v.probs[k]])))));
+      // A model that chose abstain abstains, whatever weights it put on the options
+      answer = vs.some((v) => v[field] === "abstain") ? "abstain" : argmax(dist);
+      if (answer === "abstain") {
+        conf = 0;
+        agree = false;
+      } else if (q.type === "score") {
         // Scores within one level of each other count as agreement
         const nums = vs.map((v) => Number(v[field]));
         agree = nums.every((n) => Number.isFinite(n)) && Math.max(...nums) - Math.min(...nums) <= 1;
@@ -206,7 +274,7 @@ export function combine(req, votes) {
 }
 
 // ── Entry point ──
-export async function decide(req, { models = ["claude", "codex"], log = true, claude = {}, codex = {} } = {}) {
+export async function decide(req, { models = route(req), log = true, claude = {}, codex = {} } = {}) {
   const t0 = performance.now();
   const calls = await Promise.all(models.map((m) => (m === "claude" ? askClaude(req, claude) : askCodex(req, codex))));
   const byModel = Object.fromEntries(models.map((m, i) => [m, calls[i]]));

@@ -5,6 +5,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decide } from "../core/cev.mjs";
 import { warmDecider } from "../core/warm.mjs";
+// Recorded results measured the two-model panel; keep it explicit now that Claude alone is the default
+const PANEL = ["claude", "codex"];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const arg = (k, d) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d);
@@ -19,7 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const SETS = {};
 SETS.all = [
-  { name: "cold: new processes per decision", run: (req) => decide(req, { log: false }) },
+  { name: "cold: new processes per decision", run: (req) => decide(req, { log: false, models: PANEL }) },
   { name: "warm: pre-started processes", warm: { pool: 2 } },
   { name: "warm + Codex luna", warm: { pool: 2, codexModel: "gpt-6-luna" } },
   { name: "warm + Claude Sonnet", warm: { pool: 2, claudeModel: "sonnet" } },
@@ -37,12 +39,12 @@ const out = { at: new Date().toISOString(), cases: cases.map((c) => c.id), varia
 for (const v of variants) {
   let decider = null;
   if (v.warm) {
-    decider = warmDecider(v.warm);
+    decider = warmDecider({ codex: true, ...v.warm });
     await sleep(8000); // warm-up time is not counted as decision time
   }
   const rows = [];
   for (const c of cases) {
-    const r = v.run ? await v.run(reqOf(c)) : await decider.decide(reqOf(c), { models: v.models });
+    const r = v.run ? await v.run(reqOf(c)) : await decider.decide(reqOf(c), { models: v.models ?? PANEL });
     const a = r.answers[c.q.id];
     rows.push({ id: c.id, ms: r.meta.ms, models: r.meta.models, answer: a.answer, escalate: a.escalate, right: right(c, a) });
     console.log(`${v.name.padEnd(28)} ${c.id.padEnd(10)} ${String(r.meta.ms).padStart(6)}ms ${right(c, a) ? "✓" : "✗"} ${a.answer}${a.escalate ? "→human" : ""} ${Object.entries(r.meta.models).map(([m, x]) => `${m}:${x.ms}${x.ok ? "" : "!"}`).join(" ")}`);

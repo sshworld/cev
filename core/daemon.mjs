@@ -5,16 +5,20 @@
 // - POST /decide  a decision (used by the bridge and the CLI)
 // - POST /mcp     MCP over Streamable HTTP (JSON responses only), for clients that connect by URL
 // - GET  /health  pool state, queue and counters
+// - POST /retire  exit if idle (a bridge of another version replaces the daemon this way)
 import { createServer } from "node:http";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { HOME, LOG, route, checkRequest } from "./cev.mjs";
+import { HOME, LOG, route, checkRequest, codexEnabled } from "./cev.mjs";
 import { warmDecider } from "./warm.mjs";
-import { TOOL, INSTRUCTIONS, VERSION, toolResult, toolError } from "./tool.mjs";
+import { TOOL, INSTRUCTIONS, VERSION, toolResult, toolError, protocolOf } from "./tool.mjs";
 
 const env = (k, d) => process.env[k] ?? d;
 const PORT = Number(env("CEV_PORT", 7767));
-const CONCURRENCY = Number(env("CEV_CONCURRENCY", 4));
+const CONCURRENCY = Math.max(1, Number(env("CEV_CONCURRENCY", 4)) || 1); // 0 would queue every decision forever
+const MAX_QUEUE = Math.max(0, Number(env("CEV_MAX_QUEUE", 32)) || 0);
+const MAX_BODY = 1 << 20; // a decision is a few KB; refuse anything that would only fill memory
+const CODEX = codexEnabled();
 const IDLE_MS = Number(env("CEV_IDLE_MIN", 30)) * 60_000;
 const MAX_AGE_MS = Number(env("CEV_MAX_AGE_H", 6)) * 3_600_000; // respawn the pool now and then to pick up CLI updates and refreshed auth
 
@@ -29,15 +33,18 @@ const queue = [];
 const acquire = () => (inflight < CONCURRENCY ? (inflight++, Promise.resolve()) : new Promise((r) => queue.push(r)));
 const release = () => (queue.length ? queue.shift()() : inflight--);
 
+const httpError = (status, message) => Object.assign(new Error(message), { status });
+
 async function decideShared(req, caller) {
   checkRequest(req);
+  if (inflight >= CONCURRENCY && queue.length >= MAX_QUEUE) throw httpError(503, `cev busy: ${queue.length} decisions queued, try again shortly`);
   const tq = performance.now();
   await acquire();
   const waitMs = Math.round(performance.now() - tq);
   try {
     if (!decider.awake()) awakeSince = Date.now();
     lastUsed = Date.now();
-    const models = route(req);
+    const models = route(req, { codex: CODEX });
     const r = await decider.decide(req, { models });
     stats.served++;
     stats.fallbacks += Object.values(r.meta.models).filter((m) => m.via === "cold").length;
@@ -76,7 +83,7 @@ async function mcp(msg, ctx) {
       ctx.newSession = randomUUID();
       sessions.set(ctx.newSession, { client: msg.params?.clientInfo?.name, tag: ctx.tag });
       return reply({
-        protocolVersion: msg.params?.protocolVersion ?? "2025-06-18",
+        protocolVersion: protocolOf(msg.params?.protocolVersion),
         capabilities: { tools: {} },
         serverInfo: { name: "cev", version: VERSION },
         instructions: INSTRUCTIONS,
@@ -101,9 +108,16 @@ async function mcp(msg, ctx) {
 // ── HTTP ──
 const body = (req) =>
   new Promise((resolve, reject) => {
-    let s = "";
-    req.on("data", (d) => (s += d));
-    req.on("end", () => resolve(s));
+    const chunks = [];
+    let bytes = 0;
+    let over = false;
+    req.on("data", (d) => {
+      if (over) return; // keep draining so the 413 still reaches the client
+      bytes += d.length; // bytes, not string length: multi-byte text would otherwise slip past
+      if (bytes > MAX_BODY) (over = true), (chunks.length = 0), reject(httpError(413, "request body too large"));
+      else chunks.push(d);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     req.on("error", reject);
   });
 const send = (res, code, obj, headers = {}) => {
@@ -118,7 +132,16 @@ const server = createServer(async (req, res) => {
   if (!localOrigin(req.headers.origin)) return send(res, 403, { error: "origin not allowed" });
   try {
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
+      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
+    }
+    // A bridge of another cev version asks an idle daemon to step aside. The idle check and the exit happen here,
+    // in one tick, so no decision can slip in between (a SIGTERM from outside could cut one off).
+    if (req.method === "POST" && url.pathname === "/retire") {
+      if (inflight || queue.length) return send(res, 409, { error: "busy" });
+      send(res, 200, { ok: true });
+      decider.close();
+      server.close();
+      return setImmediate(() => process.exit(0));
     }
     if (req.method === "POST" && url.pathname === "/decide") {
       const r = await decideShared(JSON.parse(await body(req)), { via: "http", tag: url.searchParams.get("client") ?? "cli", session: url.searchParams.get("session") ?? undefined });
@@ -139,7 +162,7 @@ const server = createServer(async (req, res) => {
     }
     send(res, 404, { error: "not found" });
   } catch (e) {
-    send(res, 400, { error: String(e.message ?? e) });
+    send(res, e.status ?? 400, { error: String(e.message ?? e) });
   }
 });
 
@@ -152,8 +175,8 @@ server.on("error", (e) => {
   throw e;
 });
 server.listen(PORT, "127.0.0.1", () => {
-  decider = warmDecider({ pool: Number(env("CEV_POOL", 2)), serviceTier: env("CEV_TIER", "priority") || undefined });
-  console.error(`cev ${VERSION} listening on 127.0.0.1:${PORT} (pid ${process.pid})`);
+  decider = warmDecider({ pool: Number(env("CEV_POOL", 2)), serviceTier: env("CEV_TIER", "priority") || undefined, codex: CODEX });
+  console.error(`cev ${VERSION} listening on 127.0.0.1:${PORT} (pid ${process.pid}, ${CODEX ? "Claude + Codex" : "Claude only"})`);
 });
 
 for (const sig of ["SIGTERM", "SIGINT"]) {

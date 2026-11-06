@@ -1,6 +1,6 @@
 # Working on cev
 
-cev sends a bounded decision to Claude and Codex in parallel, averages their probability distributions and escalates when they're unsure or disagree. The README covers what it does for users; this file covers how to change it safely.
+cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an opt-in second opinion with `CEV_CODEX=1`), averages the probability distributions and escalates when the answer is unsure, malformed or contested. The README covers what it does for users; this file covers how to change it safely.
 
 ## Ground rules
 
@@ -13,7 +13,7 @@ cev sends a bounded decision to Claude and Codex in parallel, averages their pro
 - **One process, one decision.** A warm Claude process serves exactly one decision and is then discarded, and every Codex decision gets a new thread. Never reuse a conversation across decisions: the answers would leak into each other.
 - **The daemon stays loopback-only.**
   - It drives the user's subscriptions, so keep the `127.0.0.1` bind and the `Origin` check.
-  - Never add an endpoint that runs anything except a decision.
+  - Never add an endpoint that runs anything except a decision. `/retire` is the one exception: it runs nothing and only lets an idle daemon exit, with the idle check inside the daemon so it is atomic.
 - **Comments.** Terse English, explaining *why*, matching the existing density.
 
 ## Layout
@@ -33,28 +33,31 @@ cev sends a bounded decision to Claude and Codex in parallel, averages their pro
 - **Answer shape.**
   - The schemas follow OpenAI strict mode: every property is required and `additionalProperties` is false. Codex rejects anything else.
   - `abstain` is always one of the options.
-  - The warm Claude path can't use `--json-schema`, which is set per process. That path embeds the schema in the prompt and checks the answer with `validate()` instead. Keep `validate()` in step with `schemaOf`.
-- **Escalation.** `combine` escalates on any of these:
-  - an abstain
+  - The warm Claude path can't use `--json-schema`, which is set per process. That path embeds the schema in the prompt and checks the answer by hand.
+  - `validVote` is the one shape check, used by the warm path and again by `combine` for every vote. Keep it in step with `schemaOf`. A vote it rejects is dropped, so it escalates. Never let a malformed vote fall through to averaging.
+- **Escalation fails closed.** `combine` escalates on any of these:
+  - an abstain (a vote whose `choice`/`score` is `abstain`, whatever its probs say)
   - disagreement (scores more than one level apart)
   - a missing vote
   - `conf` below `THRESHOLD[risk]`
 
-  With a single model, agreement is trivially true. That is why `route` sends only low-risk, non-score requests to Claude alone.
+  With a single model, agreement is trivially true, so abstain, shape and threshold carry the whole check. `checkRequest` rejects an unknown `risk` up front, and `combine` treats one as `high` as a second line.
 - **Evidence.** `why` must come from `groundedIn(state, quote)`. Don't fall back to an ungrounded quote.
 - **Single daemon.**
   - Binding the port is the lock. Construct `warmDecider` only after `listen` succeeds, so that racing daemons exit without spawning a pool.
   - An exit with code 0 on `EADDRINUSE` is expected, not an error.
+- **Spawning CLIs.** Every `spawn` needs an `error` listener: a missing CLI (ENOENT) is otherwise an uncaught exception that kills the daemon. `test/fault.test.mjs` covers this with fake CLIs.
 - **Codex app-server.**
   - Close stdin on `codex exec`, or it hangs.
   - Approval requests from app-server must be declined.
   - If the child process exits, every pending request and turn has to be failed so that the cold fallback runs.
+  - The ask deadline covers the whole ask (initialize, thread/start, turn/start, turn), not just the turn.
 - **Idle exit.** The daemon calls `process.exit(0)` after `CEV_IDLE_MIN` idle minutes, and the bridge starts it again. Anything that needs to persist goes to disk under `~/.cev/`.
 
 ## Commands
 
 ```sh
-npm test                               # unit tests, no model calls; run before every commit
+npm test                               # unit + fake-CLI fault tests, no model calls; run before every commit
 node --check core/*.mjs cli/*.mjs      # syntax check
 CEV_PORT=7768 node core/daemon.mjs     # test daemon on a spare port (never reuse 7767 while sessions use it)
 node bench/multi.mjs --port 7768       # concurrent MCP sessions against it
@@ -71,6 +74,7 @@ Keep live runs to what a change actually needs. Report anything you didn't run a
 
 - **Recorded cases are fixed.** `bench/cases.json` and `bench/cases-hard.json` match the recorded results in `bench/results/`. Don't edit existing cases; add new ones with new ids and rerun.
 - **Cases are fictional.** Use a fictional project (`acme/widget`) and fictional handles. Never put real people, private projects, tokens or real CVE ids in cases.
+- **The panel is pinned.** `bench/run.mjs` and `bench/speed.mjs` pass `models: PANEL` explicitly, because the recorded results measured Claude + Codex. Default routing changes must not move them.
 - **The baseline prompt is fixed.** The baseline prompt in `bench/run.mjs` is part of the measurement. Changing it invalidates the comparison until both sets are rerun.
 - **Regenerate in order.** After changing `analyze.mjs` or `report.mjs`, run `node bench/analyze.mjs [--tag hard --cases cases-hard.json]`, then `node bench/report.mjs [...]`. `--cases` is resolved relative to `bench/`.
 - **Token conversion.** `TOK_PER_CHAR` (0.40) in `analyze.mjs` was measured with lean Claude on the 60 English request payloads. Re-measure it if the cases change language or shape.

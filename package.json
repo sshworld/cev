@@ -1,7 +1,7 @@
 {
   "name": "cev",
-  "version": "0.3.1",
-  "description": "Hand bounded decisions to a Claude + Codex panel over MCP: typed questions in, calibrated answers out, escalate when unsure.",
+  "version": "0.4.0",
+  "description": "Hand bounded decisions to an isolated Claude call over MCP, with an optional Codex second opinion: typed questions in, an answer or an escalation out.",
   "type": "module",
   "license": "MIT",
   "author": "sshworld",

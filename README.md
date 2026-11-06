@@ -1,18 +1,20 @@
 # cev
 
-**Hand bounded decisions to a Claude + Codex panel, and get back an answer or an honest "ask a human".**
+**Hand bounded decisions to a small, isolated model call, and get back an answer or an honest "ask a human".**
 
-Coding agents make small judgment calls all day: merge or review, retry or escalate, which bucket a request belongs to, what score a draft earns. Reasoning them out inside the main session costs context and time, and a single model will sometimes answer confidently and wrong.
+Coding agents make small judgment calls all day: merge or review, retry or escalate, which bucket a request belongs to, what score a draft earns. Reasoning them out inside the main session costs context and time, and it gets expensive when an agent makes dozens of them in a row or runs unattended.
 
-cev turns each of those calls into a typed question. It asks Claude (through the `claude` CLI) and Codex (through the `codex` CLI) in parallel. Each model answers only from the facts you pass in, and the two answers are averaged into one. When the models disagree, either one abstains, or confidence falls below the bar for that question's risk, cev returns `escalate: true` instead of a guess.
+cev turns each of those calls into a typed question and asks a lean Claude (through the `claude` CLI) that sees only the facts you pass in. When it abstains, its answer has the wrong shape, or its confidence falls below the bar for that question's risk, cev returns `escalate: true` instead of a guess. With `CEV_CODEX=1`, Codex (through the `codex` CLI) is asked in parallel as a second opinion, and the two must agree before anything is auto-answered.
 
-It runs on the Claude Code and Codex subscriptions you already have, with no API keys and no dependencies. It plugs into Claude Code and Codex as an MCP server.
+It fits best where there is no one to ask in the moment: bots, scheduled jobs, bulk triage. In a live conversation, an unsure call is usually better put to the person directly.
+
+It runs on the subscriptions you already have, with no API keys and no dependencies. It plugs into Claude Code and Codex as an MCP server.
 
 ```text
 Claude Code session ─┐
 Claude Code session ─┼─ stdio bridge ─▶ cev daemon (one per machine, starts on demand, exits when idle)
 Codex session ───────┘                    ├─ warm Claude pool   (claude -p, stream-json, one process per decision)
-                                          ├─ warm Codex server  (codex app-server, one thread per decision)
+                                          ├─ warm Codex server  (optional, CEV_CODEX=1: codex app-server, one thread per decision)
                                           ├─ queue + concurrency cap
                                           └─ ~/.cev/log.jsonl   (every decision, with votes and caller)
 ```
@@ -70,14 +72,16 @@ Response from a real run (this is all that lands in the calling agent's context)
 | `medium` (default) | 0.75 |
 | `high` | 0.90 |
 
-A question also escalates when any model abstains, when the two models disagree, or when a model failed to answer. `missing` carries what an abstaining model said it would need.
+A question also escalates when any model abstains, when the two models disagree, or when a model failed to answer. An answer of the wrong shape counts as a failed answer: a choice outside the options, a probability outside 0–1, or a missing weight. `missing` carries what an abstaining model said it would need.
+
+Requests are checked before any model runs. An unknown `risk`, duplicate question ids, a reserved or repeated option, or a malformed `scale` is an error, not a silent default.
 
 ### Checks beyond the three question types
 
 - **Abstain with a reason.** Every question has an explicit `abstain` option, and the model is told never to guess facts that are not in `state`.
 - **Grounded evidence.** Each vote must quote at most 20 words verbatim from `state`. `why` only shows a quote that is actually in `state`, so a made-up justification never reaches you.
 - **Rules kept separate from facts.** `rules` are listed by priority apart from `state`, so policy and facts don't blur together.
-- **Two independent models.** Claude and Codex come from different labs and fail in different ways. A decision is only auto-answered when both agree, so one model's confident slip turns into an escalation rather than an action.
+- **Optional second opinion.** With `CEV_CODEX=1`, Codex answers too, and a decision is only auto-answered when both agree. The two come from different labs and can fail in different ways. In the benchmarks below, though, it caught no error that Claude alone made, so it is off by default.
 - **Risk-scaled thresholds.** The more a wrong answer costs, the higher the confidence an auto-answer needs.
 - **Full log.** Every decision is appended to `~/.cev/log.jsonl`, with both votes, timing, token counts and which session asked.
 
@@ -87,7 +91,7 @@ Requirements:
 
 - Node.js 20 or later
 - [Claude Code](https://docs.claude.com/en/docs/claude-code), logged in. The `claude` command must be on your `PATH`.
-- [Codex CLI](https://github.com/openai/codex), logged in. The `codex` command must be on your `PATH`.
+- Optional: [Codex CLI](https://github.com/openai/codex), logged in, for the second opinion (`CEV_CODEX=1`). The `codex` command must be on your `PATH`.
 
 ```sh
 git clone https://github.com/sshworld/cev.git
@@ -129,14 +133,16 @@ New sessions then see a single tool, `cev_decide`.
 - **Lean context.**
   - Claude runs with no tools, no settings sources, an empty strict MCP config and a short system prompt: about 1.6k input tokens per decision.
   - Codex runs from a separate `CODEX_HOME` that shares only `auth.json`, with its shell, apps, plugins, memories and environment context turned off: about 6.2k input tokens.
-- **Routing.** If every question is `low` risk and none is a `score`, only Claude is asked (about 1.5s warm). Everything else goes to both models (about 2–4s warm). Score questions always get both because that is where the two models disagreed most often.
+- **Routing.** By default only Claude is asked (about 1.5s warm), and no Codex process is started. With `CEV_CODEX=1`, `route` in `core/cev.mjs` decides which requests also go to Codex (about 2–4s warm with both).
 - **Failure handling.**
   - If a warm process has died, times out (90s) or returns an answer of the wrong shape, that one model is asked again cold, in a fresh process.
-  - If the Codex server dies, everything waiting on it fails over to cold and a new server is started.
+  - If the Codex server dies, or stalls anywhere before answering, everything waiting on it fails over to cold. A new server is started for the next decision.
+  - A CLI that is missing from `PATH` is a failed answer, which escalates. It does not crash the daemon.
+  - A bridge that finds a daemon from another cev version replaces it once it is idle, so an upgrade takes effect without killing processes by hand.
 - **Lifetime.**
   - After 30 idle minutes the daemon exits, taking its child processes with it. The next decision starts it again in a few seconds.
   - After 6 hours of uptime the pool is respawned between decisions, so CLI updates and refreshed logins are picked up.
-- **Concurrency.** At most 4 decisions run at once and the rest queue. The daemon and its pool use about 400–500MB no matter how many sessions use it.
+- **Concurrency.** At most 4 decisions run at once and up to 32 queue; beyond that the daemon answers 503. Request bodies are capped at 1MB. The daemon and its pool use about 400–500MB no matter how many sessions use it.
 
 ### Other ways in
 
@@ -148,7 +154,7 @@ cev decide request.json --only claude
 cev status                       # daemon health, queue, counters
 ```
 
-The daemon also serves `POST /decide` (plain JSON), `GET /health`, and `POST /mcp` (MCP over Streamable HTTP, JSON responses only) for clients that prefer to connect by URL. It rejects any browser `Origin` other than localhost.
+The daemon also serves `POST /decide` (plain JSON), `GET /health`, `POST /retire` (exit if idle; used on version change), and `POST /mcp` (MCP over Streamable HTTP, JSON responses only) for clients that prefer to connect by URL. It rejects any browser `Origin` other than localhost.
 
 ### Configuration
 
@@ -157,8 +163,10 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 | variable | default | meaning |
 |---|---|---|
 | `CEV_PORT` | `7767` | daemon port (loopback only) |
+| `CEV_CODEX` | off | `1` adds Codex as a second opinion |
 | `CEV_POOL` | `2` | warm Claude processes and spare Codex threads |
 | `CEV_CONCURRENCY` | `4` | decisions in flight; the rest queue |
+| `CEV_MAX_QUEUE` | `32` | decisions allowed to wait; more get 503 |
 | `CEV_IDLE_MIN` | `30` | idle minutes before the daemon exits |
 | `CEV_MAX_AGE_H` | `6` | hours before the pool is respawned between decisions |
 | `CEV_TIER` | `priority` | Codex service tier. `priority` was about 1.25× faster in our runs but uses more of your plan. Set it empty to use the standard tier. |
@@ -177,7 +185,7 @@ All files live under `~/.cev/`:
 
 ## Benchmarks
 
-Everything here was measured on one Mac on 2026-10-30 with Claude Opus 5.5 and gpt-6.1-sol. All of it ran on subscription usage.
+Everything here was measured on one Mac on 2026-10-30 with Claude Opus 5.5 and gpt-6.1-sol, with the two-model panel (what `CEV_CODEX=1` gives now). All of it ran on subscription usage. Lean Claude alone has not been benchmarked against the panel yet, so these numbers say nothing about what the second opinion adds.
 
 - **The cases.** There are two sets of 30 English cases set in a fictional open-source project (`acme/widget`):
   - PR review, issue triage, CI failures, dependency bumps, SemVer releases, security reports (CVSS v3.1 bands), moderation, coding-agent task routing, repo hygiene and rubric scoring.

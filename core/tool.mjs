@@ -1,21 +1,26 @@
 // MCP tool definition, shared by the daemon (/mcp) and the per-session stdio bridge (cli/mcp.mjs).
-export const VERSION = "0.3.1";
+export const VERSION = "0.4.0";
+
+// MCP revisions this server speaks; reply with the client's if we know it, otherwise our newest
+export const PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
+export const protocolOf = (v) => (PROTOCOLS.includes(v) ? v : PROTOCOLS[0]);
 
 // Clients load this at session start even while the tool itself is deferred, so it says when to reach for cev.
+// It is aimed at repeated or unattended judgments: with a person in the conversation, an unsure call is better asked directly.
+export const ESCALATE = "If escalate=true, do not act on the answer: ask the user, or in an unattended run take the safe default (skip, hold, leave for review).";
 export const INSTRUCTIONS =
-  "Use cev_decide before acting on a bounded judgment you could get wrong: " +
-  "go/no-go before hard-to-reverse actions (deploy, push, send, delete), " +
-  "triage or routing among fixed options, and rubric scoring. " +
+  "Use cev_decide for bounded judgments among fixed options that you would otherwise reason out at length in this context, " +
+  "especially many in a row or in unattended runs: triage and routing, rubric scoring, go/no-go checks. " +
   "Gather the facts yourself first; cev sees only the state you pass. " +
-  "If escalate=true, do not act on the answer — ask the user.";
+  ESCALATE;
 
 export const TOOL = {
   name: "cev_decide",
   description:
-    "Hand a bounded judgment call to an independent Claude + Codex panel instead of reasoning it out in this context. " +
+    "Hand a bounded judgment call to an isolated model call (optionally with a Codex second opinion) instead of reasoning it out in this context. " +
     "Give the facts in `state`, optional `rules`, and typed questions (choice/bool/score). " +
-    "Returns per question: answer, conf, agree, escalate. When escalate=true, do not act on the answer — decide yourself or ask the user. " +
-    "Use for routing, triage, rubric scoring, go/no-go checks. Not for open-ended writing or anything needing tools.",
+    "Returns per question: answer, conf, agree, escalate. " + ESCALATE + " " +
+    "Not for open-ended writing or anything needing tools.",
   inputSchema: {
     type: "object",
     required: ["state", "questions"],

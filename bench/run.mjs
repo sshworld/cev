@@ -5,6 +5,8 @@ import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decide, HOME } from "../core/cev.mjs";
+// Recorded results measured the two-model panel; keep it explicit now that Claude alone is the default
+const PANEL = ["claude", "codex"];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "results");
@@ -72,7 +74,7 @@ console.log(`baseline fixed overhead: ${calib.tokensIn} tokens, ${calib.ms} ms`)
 
 for (const c of cases) {
   const prompt = baselinePrompt(c);
-  const [base, cev] = await Promise.all([claudeDefault(prompt), decide(reqOf(c), { log: false })]);
+  const [base, cev] = await Promise.all([claudeDefault(prompt), decide(reqOf(c), { log: false, models: PANEL })]);
   const parsed = parseBaseline(c, base.text);
   results.cases.push({ id: c.id, baseline: { ...base, ...parsed, promptChars: prompt.length }, cev });
   const a = cev.answers[c.q.id];
@@ -84,7 +86,7 @@ for (const c of cases) {
 for (const c of cases.slice(0, STABILITY)) {
   const runs = [];
   for (let i = 0; i < 2; i++) {
-    const [base, cev] = await Promise.all([claudeDefault(baselinePrompt(c)), decide(reqOf(c), { log: false })]);
+    const [base, cev] = await Promise.all([claudeDefault(baselinePrompt(c)), decide(reqOf(c), { log: false, models: PANEL })]);
     runs.push({ baseline: parseBaseline(c, base.text).answer, cev: cev.answers[c.q.id].answer, claude: cev.votes.claude?.[c.q.id], codex: cev.votes.codex?.[c.q.id] });
   }
   results.stability.push({ id: c.id, runs });
