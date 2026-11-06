@@ -96,6 +96,8 @@ Requests are checked before any model runs. An unknown `risk`, duplicate questio
 
 ## Install
 
+What changed in each release: [CHANGELOG.md](CHANGELOG.md).
+
 Requirements:
 
 - Node.js 20 or later
