@@ -54,7 +54,7 @@ Response from a real run (this is all that lands in the calling agent's context)
 }
 ```
 
-`size` came back as `escalate` because nothing in `state` or `rules` says what a 1 or a 5 is. Both models said so in `missing`, and neither invented a scale. This run was cold, starting new CLI processes. Through the warm daemon, decisions take about 2–4s.
+`size` came back as `escalate` because nothing in `state` or `rules` says what a 1 or a 5 is. Both models said so in `missing`, and neither invented a scale. This run used the two-model panel (`CEV_CODEX=1`) and was cold, starting new CLI processes. Through the warm daemon, a decision takes about 1.5s with Claude alone and 2–4s with both.
 
 ### Question types
 
@@ -63,6 +63,15 @@ Response from a real run (this is all that lands in the calling agent's context)
 | `choice` | a probability per option plus `abstain` | the option with the highest averaged probability | both picked the same option |
 | `bool` | `p_yes` and an `abstain` flag | `true` / `false`, or `"abstain"` if either model abstained | both are on the same side of 0.5 |
 | `score` | a probability per level on `scale` (default `[1, 5]`) | an integer level | the two scores are at most one level apart; `conf` is the probability mass within ±1 |
+
+### Request rules
+
+- Question `id`: a letter, then up to 63 letters, digits, `_` or `-`. Ids must be unique within a request.
+- At most 20 questions per request. A `choice` question takes 2–20 distinct options, and `abstain` is reserved.
+- `scale` is `[lo, hi]`: integers with `|n| ≤ 1,000,000`, `lo < hi`, and at most 21 levels.
+- `risk` is `low`, `medium` or `high`. It defaults to `medium`.
+
+A request that breaks a rule is rejected before any model runs. Over MCP the tool call returns `isError`, and the CLI exits with code 1.
 
 ### When cev escalates
 
@@ -83,7 +92,7 @@ Requests are checked before any model runs. An unknown `risk`, duplicate questio
 - **Rules kept separate from facts.** `rules` are listed by priority apart from `state`, so policy and facts don't blur together.
 - **Optional second opinion.** With `CEV_CODEX=1`, Codex answers too, and a decision is only auto-answered when both agree. The two come from different labs and can fail in different ways. In the benchmarks below, though, it caught no error that Claude alone made, so it is off by default.
 - **Risk-scaled thresholds.** The more a wrong answer costs, the higher the confidence an auto-answer needs.
-- **Full log.** Every decision is appended to `~/.cev/log.jsonl`, with both votes, timing, token counts and which session asked.
+- **Full log.** Every decision is appended to `~/.cev/log.jsonl`, with every vote, timing, token counts and which session asked.
 
 ## Install
 
@@ -96,10 +105,13 @@ Requirements:
 ```sh
 git clone https://github.com/sshworld/cev.git
 cd cev
-npm test   # pure logic, calls no model
+npm test   # logic, fake-CLI and daemon tests; calls no model
+npm link   # optional: puts the `cev` command on your PATH (or run `node cli/cev.mjs`)
 ```
 
 There is nothing else to install. There is no background service to register: the daemon starts on the first decision and exits after 30 idle minutes.
+
+Tested on macOS with Node 20 and 26. It should work on Linux. Windows is untested: the CLIs are spawned without a shell, so npm `.cmd` shims may not be found.
 
 ### Add to Claude Code
 
@@ -151,6 +163,8 @@ cev decide request.json          # via the daemon if it's up, otherwise cold in-
 cat request.json | cev decide -  # same, from stdin
 cev decide request.json --full   # include votes and per-model timing
 cev decide request.json --only claude
+cev --version
+# exit codes: 0 decided (an escalation is still a decision), 1 failed or refused, 2 usage error
 cev status                       # daemon health, queue, counters
 ```
 
@@ -177,10 +191,10 @@ The models are Claude Opus (the `opus` alias) and `gpt-6.1-sol` at `low` reasoni
 
 All files live under `~/.cev/`:
 
-- `log.jsonl`: every request in full (including `state`), both votes, timing and caller. Treat it like any log that may contain whatever you put in `state`.
+- `log.jsonl`: every request in full (including `state`), every vote, timing and caller. Treat it like any log that may contain whatever you put in `state`. cev keeps `~/.cev` at mode 700 and the log at 600.
 - `daemon.log`: daemon start, exit and errors.
 - `run/`: the working directory for the CLIs.
-- `codex-home/`: Codex's separate home. It contains a symlink to `~/.codex/auth.json` and a minimal `config.toml`.
+- `codex-home/`: Codex's separate home, created only when Codex is used. It contains a symlink to `~/.codex/auth.json` (a copy where symlinks aren't allowed) and a minimal `config.toml`.
 - `empty-mcp.json`, `system.md`: generated configuration.
 
 ## Benchmarks

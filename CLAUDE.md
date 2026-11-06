@@ -23,8 +23,8 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
 | `core/cev.mjs` | `SYSTEM` prompt, `schemaOf`/`promptOf`, cold runners `askClaude`/`askCodex`, `combine` (averaging, agreement, thresholds), `route`, `checkRequest`, `decide` |
 | `core/warm.mjs` | `ClaudeProc` (stream-json pool), `CodexServer` (app-server JSON-RPC client), `warmDecider` with per-model cold fallback and `sleep()` |
 | `core/daemon.mjs` | shared daemon: concurrency queue, idle exit, periodic pool respawn, `/decide`, `/mcp`, `/health`, JSONL log |
-| `core/tool.mjs` | `cev_decide` schema, `toolResult`, `toolError`, `VERSION` |
-| `cli/mcp.mjs` | per-session stdio MCP bridge; answers handshake/listing locally, starts the daemon detached on first decision |
+| `core/tool.mjs` | `cev_decide` input/output schema, `toolResult`, `toolError`, `VERSION`, `handleMcp` (the one JSON-RPC dispatcher both transports use) |
+| `cli/mcp.mjs` | per-session stdio MCP bridge; answers handshake/listing locally, starts the daemon detached on first decision, replaces an idle daemon of another version |
 | `cli/cev.mjs` | CLI: daemon first, cold fallback |
 | `bench/` | cases, runners, analysis, report generator, recorded results |
 
@@ -37,11 +37,13 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
   - `validVote` is the one shape check, used by the warm path and again by `combine` for every vote. Keep it in step with `schemaOf`. A vote it rejects is dropped, so it escalates. Never let a malformed vote fall through to averaging.
 - **Escalation fails closed.** `combine` escalates on any of these:
   - an abstain (a vote whose `choice`/`score` is `abstain`, whatever its probs say)
-  - disagreement (scores more than one level apart)
+  - disagreement: picks differ, a pick isn't the averaged answer (choice), or scores sit more than one level apart or from the answer. Probabilities that contradict every pick must never authorize an answer.
   - a missing vote
   - `conf` below `THRESHOLD[risk]`
 
   With a single model, agreement is trivially true, so abstain, shape and threshold carry the whole check. `checkRequest` rejects an unknown `risk` up front, and `combine` treats one as `high` as a second line.
+- **Validation everywhere.** `decide()` calls `checkRequest` itself, so the CLI's cold path, the daemon and library callers all get the same checks. Look up thresholds with `thresholdOf` (own properties only), never `THRESHOLD[risk]`.
+- **MCP.** Both transports go through `handleMcp`. Notifications and client responses get no reply. The HTTP transport answers 404 for an unknown session id and 400 for an unsupported `MCP-Protocol-Version`.
 - **Evidence.** `why` must come from `groundedIn(state, quote)`. Don't fall back to an ungrounded quote.
 - **Single daemon.**
   - Binding the port is the lock. Construct `warmDecider` only after `listen` succeeds, so that racing daemons exit without spawning a pool.

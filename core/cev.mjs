@@ -3,7 +3,7 @@
 // request:  { state, rules?, questions: [{ id, type: "choice"|"bool"|"score", ask, options?, scale?, risk? }] }
 // response: { answers: { [id]: { answer, conf, agree, escalate, why, missing } }, votes, meta }
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync, appendFileSync, existsSync, symlinkSync, rmSync, lstatSync } from "node:fs";
+import { mkdirSync, writeFileSync, appendFileSync, existsSync, symlinkSync, copyFileSync, rmSync, lstatSync, chmodSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -40,7 +40,10 @@ export function route(req, { codex = codexEnabled() } = {}) {
 // Reject malformed requests before any model is called. A bad field must fail here, not fall through to a default
 // (an unknown risk would otherwise have no threshold and never escalate).
 export const RISKS = Object.keys(THRESHOLD);
-export const LIMITS = { questions: 20, options: 20, levels: 21 };
+export const LIMITS = { questions: 20, options: 20, levels: 21, scaleAbs: 1_000_000 };
+// Ids become JSON object keys in the schema and the answers: keep them plain so none can collide with Object.prototype
+const ID = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+export const thresholdOf = (risk) => (Object.hasOwn(THRESHOLD, risk ?? "medium") ? THRESHOLD[risk ?? "medium"] : THRESHOLD.high);
 const bad = (msg) => {
   throw new Error(msg);
 };
@@ -49,7 +52,8 @@ export function checkRequest(req) {
   if (req.questions.length > LIMITS.questions) bad(`at most ${LIMITS.questions} questions per request`);
   const ids = new Set();
   for (const q of req.questions) {
-    if (!q || typeof q.id !== "string" || !q.id || !["choice", "bool", "score"].includes(q.type) || !q.ask) bad(`bad question: ${JSON.stringify(q).slice(0, 120)}`);
+    if (!q || typeof q !== "object" || !["choice", "bool", "score"].includes(q.type) || typeof q.ask !== "string" || !q.ask.trim()) bad(`bad question: ${JSON.stringify(q)?.slice(0, 120)}`);
+    if (typeof q.id !== "string" || !ID.test(q.id)) bad(`bad question id ${JSON.stringify(q.id)}: use letters, digits, _ or -, starting with a letter`);
     if (ids.has(q.id)) bad(`duplicate question id ${q.id}`);
     ids.add(q.id);
     if (q.risk !== undefined && !RISKS.includes(q.risk)) bad(`${q.id}: risk must be one of ${RISKS.join(", ")}`);
@@ -61,7 +65,8 @@ export function checkRequest(req) {
     }
     if (q.type === "score" && q.scale !== undefined) {
       const [lo, hi] = Array.isArray(q.scale) ? q.scale : [];
-      if (q.scale.length !== 2 || !Number.isInteger(lo) || !Number.isInteger(hi) || hi <= lo || hi - lo + 1 > LIMITS.levels) bad(`${q.id}: scale must be [lo, hi] integers with up to ${LIMITS.levels} levels`);
+      const int = (n) => Number.isSafeInteger(n) && Math.abs(n) <= LIMITS.scaleAbs;
+      if (q.scale.length !== 2 || !int(lo) || !int(hi) || hi <= lo || hi - lo + 1 > LIMITS.levels) bad(`${q.id}: scale must be [lo, hi] integers with up to ${LIMITS.levels} levels`);
     }
   }
 }
@@ -135,22 +140,46 @@ function run(cmd, args, { cwd, env, timeout = 120_000 }) {
   });
 }
 
+// ~/.cev holds every request in log.jsonl, so keep it private to the user
+export function ensureHome() {
+  mkdirSync(RUN, { recursive: true, mode: 0o700 });
+  for (const [path, mode] of [[HOME, 0o700], [LOG, 0o600]]) {
+    try {
+      chmodSync(path, mode); // tighten what older versions created with the default umask
+    } catch {}
+  }
+}
+export const appendLog = (entry) => {
+  ensureHome();
+  appendFileSync(LOG, JSON.stringify(entry) + "\n", { mode: 0o600 });
+};
+
 export function prepare() {
-  mkdirSync(RUN, { recursive: true });
-  mkdirSync(CODEX_HOME, { recursive: true });
+  ensureHome();
   const mcp = join(HOME, "empty-mcp.json");
   if (!existsSync(mcp)) writeFileSync(mcp, '{"mcpServers":{}}');
-  // Codex runs from its own home that shares only auth, without the user's hooks, plugins and memories
+  writeFileSync(join(HOME, "system.md"), SYSTEM);
+  return { mcp };
+}
+
+// Codex runs from its own home that shares only auth, without the user's hooks, plugins and memories.
+// Only Codex paths call this, so a Claude-only setup never needs ~/.codex or symlink rights (Windows).
+export function prepareCodex() {
+  prepare();
+  mkdirSync(CODEX_HOME, { recursive: true, mode: 0o700 });
   // lstat, not existsSync: the link dangles when Codex isn't logged in, and re-linking it would throw EEXIST
   const auth = join(CODEX_HOME, "auth.json");
+  const src = join(homedir(), ".codex", "auth.json");
   try {
     lstatSync(auth);
   } catch {
-    symlinkSync(join(homedir(), ".codex", "auth.json"), auth);
+    try {
+      symlinkSync(src, auth);
+    } catch {
+      if (existsSync(src)) copyFileSync(src, auth); // no symlink rights: a copy works until the login is refreshed
+    }
   }
   writeFileSync(join(CODEX_HOME, "config.toml"), 'web_search = "disabled"\n');
-  writeFileSync(join(HOME, "system.md"), SYSTEM);
-  return { mcp };
 }
 
 export async function askClaude(req, { model = "opus" } = {}) {
@@ -166,14 +195,15 @@ export async function askClaude(req, { model = "opus" } = {}) {
     const u = Object.values(j.modelUsage ?? {})[0] ?? {};
     const tokensIn = (u.inputTokens ?? 0) + (u.cacheReadInputTokens ?? 0) + (u.cacheCreationInputTokens ?? 0);
     const answer = j.structured_output ?? JSON.parse(j.result);
-    return { ok: !j.is_error, answer, ms: r.ms, tokensIn, tokensOut: u.outputTokens ?? 0 };
+    // A non-zero exit is a failed call even if something parseable was printed
+    return { ok: r.code === 0 && !j.is_error, answer, ms: r.ms, tokensIn, tokensOut: u.outputTokens ?? 0 };
   } catch (e) {
     return { ok: false, error: (r.err || r.out || String(e)).slice(0, 400), ms: r.ms, tokensIn: 0, tokensOut: 0 };
   }
 }
 
 export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = {}) {
-  prepare();
+  prepareCodex();
   const schemaFile = join(RUN, `schema-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
   writeFileSync(schemaFile, JSON.stringify(schemaOf(req)));
   let r;
@@ -190,6 +220,8 @@ export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = 
   }
   let answer = null;
   let usage = {};
+  let completed = false;
+  let failed = false;
   for (const line of r.out.split("\n")) {
     if (!line.startsWith("{")) continue;
     let ev;
@@ -199,10 +231,13 @@ export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = 
       continue;
     }
     if (ev.type === "item.completed" && ev.item?.type === "agent_message") answer = ev.item.text;
-    if (ev.type === "turn.completed") usage = ev.usage;
+    if (ev.type === "turn.completed") (usage = ev.usage ?? {}), (completed = true);
+    if (ev.type === "turn.failed") failed = true;
     if (ev.type === "error" || ev.type === "turn.failed") r.err += JSON.stringify(ev);
   }
   try {
+    // Only a completed turn from a cleanly exiting process counts; a message before a failure may be partial
+    if (failed || !completed || r.code !== 0) throw new Error("codex turn did not complete");
     if (!answer) throw new Error("no agent message");
     return { ok: true, answer: JSON.parse(answer), ms: r.ms, tokensIn: usage.input_tokens ?? 0, tokensOut: (usage.output_tokens ?? 0) + (usage.reasoning_output_tokens ?? 0) };
   } catch {
@@ -232,7 +267,7 @@ export function combine(req, votes) {
   const answers = {};
   for (const q of req.questions) {
     const vs = votes.map((v) => v?.[q.id]).filter((a) => validVote(q, a));
-    const thr = THRESHOLD[q.risk ?? "medium"] ?? THRESHOLD.high;
+    const thr = thresholdOf(q.risk);
     const evidence = vs.map((v) => v.evidence).find((e) => e && groundedIn(req.state, e)) ?? "";
     const missing = vs.map((v) => v.missing).filter(Boolean).join(" / ");
     let answer, conf, agree;
@@ -259,11 +294,13 @@ export function combine(req, votes) {
       } else if (q.type === "score") {
         // Scores within one level of each other count as agreement
         const nums = vs.map((v) => Number(v[field]));
-        agree = nums.every((n) => Number.isFinite(n)) && Math.max(...nums) - Math.min(...nums) <= 1;
+        // ...and each pick must sit within one level of the averaged answer, so probs can't outvote every pick
+        agree = nums.every((n) => Number.isFinite(n) && Math.abs(n - Number(answer)) <= 1) && Math.max(...nums) - Math.min(...nums) <= 1;
         conf = [-1, 0, 1].reduce((a, d) => a + (dist[String(Number(answer) + d)] ?? 0), 0);
         answer = Number(answer);
       } else {
-        agree = vs.every((v) => v[field] === vs[0][field]);
+        // Agreement means every model picked the answer itself: probs that contradict the picks never authorize it
+        agree = vs.every((v) => v[field] === answer);
         conf = dist[answer];
       }
     }
@@ -274,7 +311,9 @@ export function combine(req, votes) {
 }
 
 // ── Entry point ──
-export async function decide(req, { models = route(req), log = true, claude = {}, codex = {} } = {}) {
+export async function decide(req, { models, log = true, claude = {}, codex = {} } = {}) {
+  checkRequest(req); // every entry point validates, not only the daemon
+  models ??= route(req);
   const t0 = performance.now();
   const calls = await Promise.all(models.map((m) => (m === "claude" ? askClaude(req, claude) : askCodex(req, codex))));
   const byModel = Object.fromEntries(models.map((m, i) => [m, calls[i]]));
@@ -284,9 +323,6 @@ export async function decide(req, { models = route(req), log = true, claude = {}
     models: Object.fromEntries(Object.entries(byModel).map(([m, c]) => [m, { ok: c.ok, ms: c.ms, tokensIn: c.tokensIn, tokensOut: c.tokensOut, ...(c.error && { error: c.error }) }])),
   };
   const result = { answers, votes: Object.fromEntries(Object.entries(byModel).map(([m, c]) => [m, c.ok ? c.answer : null])), meta };
-  if (log) {
-    mkdirSync(HOME, { recursive: true });
-    appendFileSync(LOG, JSON.stringify({ at: new Date().toISOString(), req, ...result }) + "\n");
-  }
+  if (log) appendLog({ at: new Date().toISOString(), req, ...result });
   return result;
 }

@@ -5,12 +5,12 @@
 //   claude mcp add --scope user cev -- node /path/to/cev/cli/mcp.mjs
 //   codex mcp add cev -- node /path/to/cev/cli/mcp.mjs
 import { spawn } from "node:child_process";
-import { mkdirSync, openSync } from "node:fs";
+import { openSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HOME } from "../core/cev.mjs";
-import { TOOL, INSTRUCTIONS, VERSION, toolResult, toolError, protocolOf } from "../core/tool.mjs";
+import { HOME, ensureHome } from "../core/cev.mjs";
+import { VERSION, handleMcp, parseError } from "../core/tool.mjs";
 
 const BASE = `http://127.0.0.1:${process.env.CEV_PORT ?? 7767}`;
 const DAEMON = join(dirname(fileURLToPath(import.meta.url)), "..", "core", "daemon.mjs");
@@ -43,7 +43,7 @@ async function retireStale() {
 async function ensureDaemon() {
   await retireStale();
   if (await health()) return;
-  mkdirSync(HOME, { recursive: true });
+  ensureHome();
   const log = openSync(join(HOME, "daemon.log"), "a");
   // Detached so it outlives this session for others to use. If several sessions race, whoever binds the port wins.
   spawn(process.execPath, [DAEMON], { detached: true, stdio: ["ignore", log, log] }).unref();
@@ -65,39 +65,27 @@ async function decide(args) {
       if (attempt) throw e;
       continue;
     }
-    const body = await r.json();
+    const body = await r.json().catch(() => ({ error: `cev daemon answered HTTP ${r.status}` }));
     if (!r.ok) throw new Error(body.error);
     return body;
   }
 }
 
-const out = (m) => process.stdout.write(JSON.stringify(m) + "\n");
+const out = (m) => m && process.stdout.write(JSON.stringify(m) + "\n");
 
 createInterface({ input: process.stdin }).on("line", async (line) => {
+  if (!line.trim()) return;
   let msg;
   try {
     msg = JSON.parse(line);
   } catch {
-    return;
+    return out(parseError());
   }
-  const reply = (result) => out({ jsonrpc: "2.0", id: msg.id, result });
-  const fail = (code, message) => out({ jsonrpc: "2.0", id: msg.id, error: { code, message } });
-  switch (msg.method) {
-    case "initialize":
-      client = msg.params?.clientInfo?.name ?? client;
-      return reply({ protocolVersion: protocolOf(msg.params?.protocolVersion), capabilities: { tools: {} }, serverInfo: { name: "cev", version: VERSION }, instructions: INSTRUCTIONS });
-    case "ping":
-      return reply({});
-    case "tools/list":
-      return reply({ tools: [TOOL] });
-    case "tools/call":
-      if (msg.params?.name !== TOOL.name) return fail(-32602, `unknown tool ${msg.params?.name}`);
-      try {
-        return reply(toolResult(await decide(msg.params.arguments)));
-      } catch (e) {
-        return reply(toolError(e));
-      }
-    default:
-      if (msg.id != null) fail(-32601, `method not found: ${msg.method}`);
-  }
+  // JSON-RPC batches are gone from MCP since 2025-06-18; answer each item anyway for older clients
+  const msgs = Array.isArray(msg) && msg.length ? msg : [msg];
+  const replies = await Promise.all(msgs.map((m) => handleMcp(m, { decide, onInitialize: (p) => (client = p.clientInfo?.name ?? client) })));
+  if (Array.isArray(msg) && msg.length) {
+    const sent = replies.filter(Boolean);
+    if (sent.length) out(sent);
+  } else out(replies[0]);
 });

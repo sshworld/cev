@@ -5,7 +5,7 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
-import { HOME, SYSTEM, schemaOf, promptOf, combine, prepare, askClaude, askCodex, validVote, codexEnabled, CODEX_HOME, CODEX_OFF } from "./cev.mjs";
+import { HOME, SYSTEM, schemaOf, promptOf, combine, prepare, prepareCodex, askClaude, askCodex, validVote, codexEnabled, CODEX_HOME, CODEX_OFF } from "./cev.mjs";
 
 const RUN = join(HOME, "run");
 
@@ -78,7 +78,7 @@ const validate = (req, answer) => req.questions.every((q) => validVote(q, answer
 // ── Codex app-server ──
 class CodexServer {
   constructor({ model, effort, serviceTier }) {
-    prepare();
+    prepareCodex();
     this.model = model;
     this.serviceTier = serviceTier;
     this.effort = effort;
@@ -122,7 +122,8 @@ class CodexServer {
     if (!turn) return;
     if (msg.method === "item/completed" && p.item?.type === "agentMessage") turn.text = p.item.text;
     if (msg.method === "thread/tokenUsage/updated") turn.usage = p.tokenUsage.last;
-    if (msg.method === "turn/completed") (turn.completed = true), turn.done();
+    // A failed or interrupted turn also "completes"; only status completed means the answer is final
+    if (msg.method === "turn/completed") (turn.completed = (p.turn?.status ?? "completed") === "completed"), turn.done();
     if (msg.method === "error") turn.error = JSON.stringify(p).slice(0, 300);
   }
   send(obj) {
@@ -166,8 +167,10 @@ class CodexServer {
       if (turn.closed) return;
       const finished = new Promise((resolve) => (turn.done = resolve));
       this.turns.set(threadId, turn);
-      await this.request("turn/start", { threadId, input: [{ type: "text", text: promptOf(req), text_elements: [] }], outputSchema: schemaOf(req), effort: this.effort });
+      const started = await this.request("turn/start", { threadId, input: [{ type: "text", text: promptOf(req), text_elements: [] }], outputSchema: schemaOf(req), effort: this.effort });
       turn.started = true;
+      turn.id = started?.turn?.id;
+      if (turn.closed) return this.interrupt(threadId, turn); // the deadline fired while turn/start was in flight
       await finished;
     })();
     work.catch(() => {});
@@ -180,9 +183,13 @@ class CodexServer {
       turn.closed = true;
       if (threadId) this.turns.delete(threadId);
     }
-    // Timed out before the turn even started: the server is stuck, not slow. Retire it (its other waiters fail over
-    // to cold) so later asks don't pile up behind it; the next ask starts a fresh one.
-    if (turn.error && !turn.started && !this.dead) this.kill();
+    if (turn.error && !this.dead) {
+      // Timed out before the turn even started: the server is stuck, not slow. Retire it (its other waiters fail
+      // over to cold) so later asks don't pile up behind it; the next ask starts a fresh one.
+      if (!turn.started) this.kill();
+      // Timed out mid-turn: stop it, so it doesn't keep running beside the cold retry outside the concurrency cap
+      else this.interrupt(threadId, turn);
+    }
     const ms = Math.round(performance.now() - t0);
     const u = turn.usage ?? {};
     try {
@@ -192,6 +199,11 @@ class CodexServer {
     } catch {
       return { ok: false, error: turn.error ?? String(turn.text).slice(0, 300), ms, tokensIn: u.inputTokens ?? 0, tokensOut: u.outputTokens ?? 0 };
     }
+  }
+  interrupt(threadId, turn) {
+    if (!turn.id || turn.interrupted || this.dead) return;
+    turn.interrupted = true;
+    this.request("turn/interrupt", { threadId, turnId: turn.id }).catch(() => {});
   }
   kill() {
     this.child.kill();

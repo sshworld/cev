@@ -192,3 +192,59 @@ test("a vote missing its schema text fields is dropped", () => {
   const r = combine(choice("low"), [{ a: { choice: "merge", probs: { merge: 1, review: 0, abstain: 0 } } }]).a;
   assert.equal(r.escalate, true);
 });
+
+// ── Round-2 regressions ──
+test("probs that contradict every pick don't authorize an answer", () => {
+  const v = { a: { choice: "review", probs: { merge: 1, review: 0, abstain: 0 }, ...T } };
+  const r = combine(choice("high"), [v, v]).a;
+  assert.deepEqual([r.agree, r.escalate], [false, true]);
+  const req = { state: "x", questions: [{ id: "a", type: "score", ask: "?", risk: "low" }] };
+  const s = { a: { score: "1", probs: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, abstain: 0 }, ...T } };
+  assert.equal(combine(req, [s, s]).a.escalate, true);
+});
+
+test("scales must be small safe integers", () => {
+  for (const scale of [[9007199254740992, 9007199254740994], [2e6, 2e6 + 2]]) {
+    assert.throws(() => checkRequest({ state: "x", questions: [{ id: "a", type: "score", ask: "?", scale }] }), /scale/);
+  }
+});
+
+test("question ids are plain identifiers", () => {
+  for (const id of ["__proto__", "", "1a", "a b", "x".repeat(65)]) {
+    assert.throws(() => checkRequest({ state: "x", questions: [{ id, type: "bool", ask: "?" }] }), /id/, id);
+  }
+  assert.doesNotThrow(() => checkRequest({ state: "x", questions: [{ id: "ci_ok-2", type: "bool", ask: "?" }] }));
+});
+
+test("an inherited property name as risk never disables the threshold", () => {
+  const votes = [vote("merge", { merge: 0.51, review: 0.49, abstain: 0 })];
+  for (const risk of ["constructor", "toString", "__proto__"]) assert.equal(combine(choice(risk), votes).a.escalate, true, risk);
+});
+
+test("decide() validates before calling any model", async () => {
+  const { decide } = await import("../core/cev.mjs");
+  await assert.rejects(decide({ state: "x", questions: [{ id: "a", type: "bool", ask: "?", risk: "constructor" }] }, { log: false }), /risk/);
+});
+
+test("MCP: notifications and client responses get no reply; junk gets a JSON-RPC error", async () => {
+  const { handleMcp, TOOL } = await import("../core/tool.mjs");
+  assert.equal(await handleMcp({ jsonrpc: "2.0", method: "ping" }), null);
+  assert.equal(await handleMcp({ jsonrpc: "2.0", method: "notifications/initialized" }), null);
+  assert.equal(await handleMcp({ jsonrpc: "2.0", id: 3, result: {} }), null);
+  for (const junk of [null, 5, "x", []]) assert.equal((await handleMcp(junk)).error.code, -32600);
+  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 1, method: "nope" })).error.code, -32601);
+  const init = await handleMcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } });
+  assert.equal(init.result.protocolVersion, "2025-03-26");
+  const call = await handleMcp({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: TOOL.name, arguments: {} } }, { decide: async () => Promise.reject(new Error("need state")) });
+  assert.equal(call.result.isError, true);
+  assert.ok(TOOL.outputSchema.properties.answers);
+});
+
+test("an id named like an Object.prototype member still gets its own answer", () => {
+  const req = { state: "x", questions: [{ id: "constructor", type: "bool", ask: "?", risk: "low" }] };
+  checkRequest(req);
+  const r = combine(req, [{ constructor: { p_yes: 0.9, abstain: false, ...T } }]);
+  assert.equal(Object.hasOwn(r, "constructor"), true);
+  assert.equal(JSON.parse(JSON.stringify(r)).constructor.answer, true);
+  assert.ok(Object.hasOwn(schemaOf(req).properties, "constructor"));
+});

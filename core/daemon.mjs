@@ -7,11 +7,10 @@
 // - GET  /health  pool state, queue and counters
 // - POST /retire  exit if idle (a bridge of another version replaces the daemon this way)
 import { createServer } from "node:http";
-import { appendFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { HOME, LOG, route, checkRequest, codexEnabled } from "./cev.mjs";
+import { route, checkRequest, codexEnabled, appendLog, ensureHome } from "./cev.mjs";
 import { warmDecider } from "./warm.mjs";
-import { TOOL, INSTRUCTIONS, VERSION, toolResult, toolError, protocolOf } from "./tool.mjs";
+import { VERSION, PROTOCOLS, handleMcp, parseError } from "./tool.mjs";
 
 const env = (k, d) => process.env[k] ?? d;
 const PORT = Number(env("CEV_PORT", 7767));
@@ -49,7 +48,7 @@ async function decideShared(req, caller) {
     stats.served++;
     stats.fallbacks += Object.values(r.meta.models).filter((m) => m.via === "cold").length;
     r.meta.waitMs = waitMs;
-    appendFileSync(LOG, JSON.stringify({ at: new Date().toISOString(), caller, req, ...r }) + "\n");
+    appendLog({ at: new Date().toISOString(), caller, req, ...r });
     return r;
   } catch (e) {
     stats.failed++;
@@ -73,37 +72,14 @@ setInterval(() => {
 }, 60_000).unref();
 
 // ── MCP ──
-const sessions = new Map(); // Mcp-Session-Id → who connected (unknown ids after a restart are still accepted)
-
-async function mcp(msg, ctx) {
-  const reply = (result) => ({ jsonrpc: "2.0", id: msg.id, result });
-  const fail = (code, message) => ({ jsonrpc: "2.0", id: msg.id, error: { code, message } });
-  switch (msg.method) {
-    case "initialize":
-      ctx.newSession = randomUUID();
-      sessions.set(ctx.newSession, { client: msg.params?.clientInfo?.name, tag: ctx.tag });
-      return reply({
-        protocolVersion: protocolOf(msg.params?.protocolVersion),
-        capabilities: { tools: {} },
-        serverInfo: { name: "cev", version: VERSION },
-        instructions: INSTRUCTIONS,
-      });
-    case "ping":
-      return reply({});
-    case "tools/list":
-      return reply({ tools: [TOOL] });
-    case "tools/call": {
-      if (msg.params?.name !== TOOL.name) return fail(-32602, `unknown tool ${msg.params?.name}`);
-      try {
-        return reply(toolResult(await decideShared(msg.params.arguments, ctx.caller())));
-      } catch (e) {
-        return reply(toolError(e));
-      }
-    }
-    default:
-      return msg.id == null ? null : fail(-32601, `method not found: ${msg.method}`);
-  }
-}
+// Mcp-Session-Id → who connected. Bounded: the oldest sessions are forgotten first, and a client that sends a
+// forgotten or deleted id gets 404 and starts over with initialize, as the Streamable HTTP transport specifies.
+const MAX_SESSIONS = 256;
+const sessions = new Map();
+const remember = (sid, info) => {
+  sessions.set(sid, info);
+  if (sessions.size > MAX_SESSIONS) sessions.delete(sessions.keys().next().value);
+};
 
 // ── HTTP ──
 const body = (req) =>
@@ -128,9 +104,9 @@ const send = (res, code, obj, headers = {}) => {
 const localOrigin = (o) => !o || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o);
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url, "http://127.0.0.1");
-  if (!localOrigin(req.headers.origin)) return send(res, 403, { error: "origin not allowed" });
   try {
+    if (!localOrigin(req.headers.origin)) return send(res, 403, { error: "origin not allowed" });
+    const url = new URL(req.url, "http://127.0.0.1"); // inside try: a malformed target must not take the daemon down
     if (req.method === "GET" && url.pathname === "/health") {
       return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
     }
@@ -149,16 +125,32 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === "/mcp") {
       if (req.method === "GET") return send(res, 405, null, { allow: "POST, DELETE" }); // no server-initiated messages, so no SSE stream
-      if (req.method === "DELETE") return sessions.delete(req.headers["mcp-session-id"]), send(res, 200, null);
-      if (req.method !== "POST") return send(res, 405, null);
       const sid = req.headers["mcp-session-id"];
-      const ctx = { tag: url.searchParams.get("client"), caller: () => ({ via: "mcp", session: sid, ...(sessions.get(sid) ?? { tag: url.searchParams.get("client") }) }) };
-      const parsed = JSON.parse(await body(req));
-      const msgs = Array.isArray(parsed) ? parsed : [parsed];
-      const replies = (await Promise.all(msgs.map((m) => mcp(m, ctx)))).filter(Boolean);
-      const headers = ctx.newSession ? { "mcp-session-id": ctx.newSession } : {};
-      if (!replies.length) return send(res, 202, null, headers);
-      return send(res, 200, Array.isArray(parsed) ? replies : replies[0], headers);
+      if (req.method === "DELETE") return send(res, sid && sessions.delete(sid) ? 200 : 404, null);
+      if (req.method !== "POST") return send(res, 405, null, { allow: "POST, DELETE" });
+      const pv = req.headers["mcp-protocol-version"];
+      if (pv && !PROTOCOLS.includes(pv)) return send(res, 400, { error: `unsupported MCP-Protocol-Version ${pv}` });
+      let parsed;
+      try {
+        parsed = JSON.parse(await body(req));
+      } catch (e) {
+        if (e.status) throw e;
+        return send(res, 400, parseError());
+      }
+      const msgs = Array.isArray(parsed) && parsed.length ? parsed : [parsed];
+      const initializing = msgs.some((m) => m?.method === "initialize");
+      if (sid && !initializing && !sessions.has(sid)) return send(res, 404, { error: "unknown or expired session, initialize again" });
+      let newSession;
+      const caller = () => ({ via: "mcp", session: sid ?? newSession, ...(sessions.get(sid ?? newSession) ?? { tag: url.searchParams.get("client") }) });
+      const onInitialize = (p) => {
+        newSession = randomUUID();
+        remember(newSession, { client: p.clientInfo?.name, tag: url.searchParams.get("client") });
+      };
+      const replies = await Promise.all(msgs.map((m) => handleMcp(m, { decide: (args) => decideShared(args, caller()), onInitialize })));
+      const headers = newSession ? { "mcp-session-id": newSession } : {};
+      const sent = replies.filter(Boolean);
+      if (!sent.length) return send(res, 202, null, headers);
+      return send(res, 200, Array.isArray(parsed) && parsed.length ? sent : sent[0], headers);
     }
     send(res, 404, { error: "not found" });
   } catch (e) {
@@ -166,7 +158,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-mkdirSync(HOME, { recursive: true });
+ensureHome();
 server.on("error", (e) => {
   if (e.code === "EADDRINUSE") {
     console.error(`cev: port ${PORT} already in use, another daemon is running`);

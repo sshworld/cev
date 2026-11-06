@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decide, HOME } from "../core/cev.mjs";
+import { decide, HOME, prepare } from "../core/cev.mjs";
 // Recorded results measured the two-model panel; keep it explicit now that Claude alone is the default
 const PANEL = ["claude", "codex"];
 
@@ -43,6 +43,7 @@ function claudeDefault(prompt) {
     const child = spawn("claude", ["-p", prompt, "--model", "opus", "--output-format", "json", "--no-session-persistence"], { cwd: join(HOME, "run"), stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
     child.stdout.on("data", (d) => (out += d));
+    child.on("error", (e) => (out = `claude: ${e.message}`)); // close still follows, and resolves as a failed call
     child.on("close", () => {
       const ms = Math.round(performance.now() - t0);
       try {
@@ -66,6 +67,8 @@ function parseBaseline(c, text) {
 }
 
 const results = { at: new Date().toISOString(), cases: [], stability: [], batch: null, calib: null };
+
+prepare(); // the baseline runs from ~/.cev/run, which a fresh install doesn't have yet
 
 // Fixed cost: send a near-empty prompt with the same setup to measure the system prompt
 const calib = await claudeDefault("OK");
@@ -106,9 +109,9 @@ const batchReq = {
     { id: "deps_only", type: "bool", ask: "Does it change only package.json and the lockfile?" },
   ],
 };
-const together = await decide(batchReq, { log: false });
+const together = await decide(batchReq, { log: false, models: PANEL });
 const single = [];
-for (const q of batchReq.questions) single.push(await decide({ ...batchReq, questions: [q] }, { log: false }));
+for (const q of batchReq.questions) single.push(await decide({ ...batchReq, questions: [q] }, { log: false, models: PANEL }));
 results.batch = { together, single };
 writeFileSync(RAW, JSON.stringify(results, null, 1));
 console.log(`batch: together ${together.meta.ms}ms, single total ${single.reduce((a, r) => a + r.meta.ms, 0)}ms`);
