@@ -10,6 +10,11 @@ import { HOME, SYSTEM, schemaOf, promptOf, combine, prepare, prepareCodex, askCl
 const RUN = join(HOME, "run");
 
 // ── Claude pool ──
+// Every Claude child still running, pooled or not, so shutdown can reach the ones already handed out
+const LIVE = new Set();
+// A finished process normally exits within ~1s of stdin closing; one that lingers is killed so it can't pile up
+const EXIT_GRACE_MS = 5_000;
+
 class ClaudeProc {
   constructor({ model }) {
     const { mcp } = prepare();
@@ -20,6 +25,7 @@ class ClaudeProc {
       { cwd: RUN, stdio: ["pipe", "pipe", "pipe"] },
     );
     this.dead = false;
+    LIVE.add(this);
     this.child.stderr.resume();
     this.child.stdin.on("error", () => {});
     this.lines = createInterface({ input: this.child.stdout });
@@ -37,10 +43,17 @@ class ClaudeProc {
     // "error" covers a CLI that failed to start (ENOENT); unhandled, it would crash the daemon
     const exited = () => {
       this.dead = true;
+      LIVE.delete(this);
       this.waiters.splice(0).forEach((w) => w(null));
     };
     this.child.on("error", exited);
     this.child.on("close", exited);
+  }
+  // The answer is taken from the result event (its is_error is the CLI's own success signal) without waiting
+  // ~0.8s for the exit; the process is then told to finish and killed if it doesn't.
+  finish() {
+    this.child.stdin.end();
+    setTimeout(() => !this.dead && this.child.kill("SIGKILL"), EXIT_GRACE_MS).unref();
   }
   ask(req, { timeout }) {
     // --json-schema is per process, so in warm mode the schema rides in the prompt and the answer is validated here
@@ -52,7 +65,7 @@ class ClaudeProc {
       this.waiters.push((ev) => {
         clearTimeout(timer);
         const ms = Math.round(performance.now() - t0);
-        this.child.stdin.end();
+        this.finish();
         if (!ev) return resolve({ ok: false, error: "claude exited", ms, tokensIn: 0, tokensOut: 0 });
         const u = Object.values(ev.modelUsage ?? {})[0] ?? {};
         const tokensIn = (u.inputTokens ?? 0) + (u.cacheReadInputTokens ?? 0) + (u.cacheCreationInputTokens ?? 0);
@@ -122,8 +135,8 @@ class CodexServer {
     if (!turn) return;
     if (msg.method === "item/completed" && p.item?.type === "agentMessage") turn.text = p.item.text;
     if (msg.method === "thread/tokenUsage/updated") turn.usage = p.tokenUsage.last;
-    // A failed or interrupted turn also "completes"; only status completed means the answer is final
-    if (msg.method === "turn/completed") (turn.completed = (p.turn?.status ?? "completed") === "completed"), turn.done();
+    // A failed or interrupted turn also "completes"; only an explicit status completed means the answer is final
+    if (msg.method === "turn/completed") (turn.completed = p.turn?.status === "completed"), turn.done();
     if (msg.method === "error") turn.error = JSON.stringify(p).slice(0, 300);
   }
   send(obj) {
@@ -195,9 +208,12 @@ class CodexServer {
     try {
       // Only a completed turn counts: text that arrived before a timeout or an error may be a partial answer
       if (turn.error || !turn.completed) throw new Error(turn.error ?? "turn did not complete");
-      return { ok: true, answer: JSON.parse(turn.text), ms, tokensIn: u.inputTokens ?? 0, tokensOut: (u.outputTokens ?? 0) + (u.reasoningOutputTokens ?? 0) };
-    } catch {
-      return { ok: false, error: turn.error ?? String(turn.text).slice(0, 300), ms, tokensIn: u.inputTokens ?? 0, tokensOut: u.outputTokens ?? 0 };
+      const answer = JSON.parse(turn.text);
+      // An answer of the wrong shape is a failed warm call, so it gets the cold retry like any other failure
+      if (!validate(req, answer)) throw new Error("invalid answer shape");
+      return { ok: true, answer, ms, tokensIn: u.inputTokens ?? 0, tokensOut: (u.outputTokens ?? 0) + (u.reasoningOutputTokens ?? 0) };
+    } catch (e) {
+      return { ok: false, error: turn.error ?? `${e.message}: ${String(turn.text).slice(0, 300)}`, ms, tokensIn: u.inputTokens ?? 0, tokensOut: u.outputTokens ?? 0 };
     }
   }
   interrupt(threadId, turn) {
@@ -269,7 +285,8 @@ export function warmDecider({ claudeModel = "opus", codexModel = "gpt-6.1-sol", 
     sleep() {
       if (!awake) return;
       awake = false;
-      claudes.splice(0).forEach((p) => p.kill());
+      claudes.splice(0);
+      LIVE.forEach((p) => p.kill()); // pooled and in-use alike
       codex?.kill();
       codex = null;
     },

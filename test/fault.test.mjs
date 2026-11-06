@@ -182,3 +182,51 @@ test("cli: usage errors exit 2, a daemon refusal exits 1 without a cold retry", 
   assert.match(bad.stderr, /risk/);
   assert.match(run(["--version"]).stdout, /^\d+\.\d+\.\d+/);
 });
+
+// Fake app-server that completes the turn with the given status (or none) after a confident answer
+const appServer = (status) => `
+    import { createInterface } from "node:readline";
+    const out = (m) => process.stdout.write(JSON.stringify(m) + "\\n");
+    createInterface({ input: process.stdin }).on("line", (l) => {
+      const m = JSON.parse(l);
+      if (m.method === "initialize") out({ id: m.id, result: {} });
+      if (m.method === "thread/start") out({ id: m.id, result: { thread: { id: "t" + m.id } } });
+      if (m.method === "turn/start") {
+        const threadId = m.params.threadId;
+        out({ id: m.id, result: { turn: { id: "u1" } } });
+        out({ method: "item/completed", params: { threadId, item: { type: "agentMessage", text: JSON.stringify({ a: { p_yes: 0.99, abstain: false, evidence: "", missing: "" } }) } } });
+        out({ method: "turn/completed", params: { threadId, turn: ${JSON.stringify(status === undefined ? { id: "u1" } : { id: "u1", status })} } });
+      }
+    });`;
+const viaFake = (src) => `exec ${JSON.stringify(NODE)} --input-type=module -e '${src.replace(/'/g, "'\\''")}'`;
+
+test("warm: only an explicit completed status counts", () => {
+  for (const [status, ok] of [["completed", true], ["failed", false], ["interrupted", false], [undefined, false]]) {
+    const r = inChild(
+      `const d = warmDecider({ codex: true, pool: 1, timeout: 2000, fallback: false });
+      const res = await d.decide(REQ, { models: ["codex"] });
+      d.close();
+      return { codex: res.meta.models.codex };`,
+      { fakes: { codex: viaFake(appServer(status)), claude: "exec /bin/sleep 30" } },
+    );
+    assert.equal(r.codex.ok, ok, String(status));
+  }
+});
+
+test("warm: a Claude child that lingers after answering is killed on close", () => {
+  const reply = JSON.stringify({ type: "result", is_error: false, result: JSON.stringify({ a: { p_yes: 0.9, abstain: false, evidence: "", missing: "" } }) });
+  // Answers, then ignores stdin EOF and stays alive; its pid goes to a file so the test can check it
+  const r = inChild(
+    `const d = warmDecider({ codex: false, pool: 1, timeout: 3000, fallback: false });
+    const res = await d.decide(REQ);
+    d.close();
+    await new Promise((r) => setTimeout(r, 300));
+    const { readFileSync } = await import("node:fs");
+    const pids = readFileSync(process.env.HOME + "/pids", "utf8").trim().split("\\n").map(Number);
+    const alive = pids.filter((p) => { try { process.kill(p, 0); return true; } catch { return false; } });
+    return { ok: res.meta.models.claude.ok, alive };`,
+    { fakes: { claude: `echo $$ >> "$HOME/pids"; read line; echo '${reply}'; exec /bin/sleep 30` } },
+  );
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.alive, []);
+});

@@ -5,7 +5,7 @@
 //   claude mcp add --scope user cev -- node /path/to/cev/cli/mcp.mjs
 //   codex mcp add cev -- node /path/to/cev/cli/mcp.mjs
 import { spawn } from "node:child_process";
-import { openSync } from "node:fs";
+import { openSync, closeSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -44,9 +44,13 @@ async function ensureDaemon() {
   await retireStale();
   if (await health()) return;
   ensureHome();
-  const log = openSync(join(HOME, "daemon.log"), "a");
+  const log = openSync(join(HOME, "daemon.log"), "a", 0o600);
   // Detached so it outlives this session for others to use. If several sessions race, whoever binds the port wins.
-  spawn(process.execPath, [DAEMON], { detached: true, stdio: ["ignore", log, log] }).unref();
+  try {
+    spawn(process.execPath, [DAEMON], { detached: true, stdio: ["ignore", log, log] }).unref();
+  } finally {
+    closeSync(log); // the child has its own copy; keeping ours would leak one per daemon start
+  }
   for (let i = 0; i < 50; i++) {
     await pause(200);
     if (await health()) return;

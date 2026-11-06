@@ -146,9 +146,10 @@ test("out-of-range or malformed votes are dropped, so they escalate", () => {
   for (const v of bad) assert.equal(combine(choice("low"), [v]).a.escalate, true, JSON.stringify(v));
 });
 
-test("a stray key in probs never becomes the answer", () => {
-  const r = combine(choice("low"), [vote("merge", { merge: 0.3, review: 0.1, abstain: 0, rm_rf: 5 })]).a;
-  assert.equal(r.answer, "merge");
+test("a stray key in probs or the vote rejects the vote", () => {
+  assert.equal(combine(choice("low"), [vote("merge", { merge: 0.3, review: 0.1, abstain: 0, rm_rf: 5 })]).a.escalate, true);
+  const extra = { a: { ...vote("merge", { merge: 1, review: 0, abstain: 0 }).a, note: "x" } };
+  assert.equal(combine(choice("low"), [extra]).a.escalate, true);
 });
 
 test("validVote accepts unnormalized weights and numeric score strings", () => {
@@ -247,4 +248,12 @@ test("an id named like an Object.prototype member still gets its own answer", ()
   assert.equal(Object.hasOwn(r, "constructor"), true);
   assert.equal(JSON.parse(JSON.stringify(r)).constructor.answer, true);
   assert.ok(Object.hasOwn(schemaOf(req).properties, "constructor"));
+});
+
+test("MCP: malformed envelopes are errors, not silently dropped", async () => {
+  const { handleMcp } = await import("../core/tool.mjs");
+  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 1 })).error.code, -32600); // no method, no result: a broken request
+  assert.equal((await handleMcp({ jsonrpc: "1.0", id: 1, method: "ping" })).error.code, -32600);
+  assert.equal((await handleMcp({ jsonrpc: "2.0", id: { x: 1 }, method: "ping" })).error.code, -32600);
+  assert.equal(await handleMcp({ jsonrpc: "2.0", id: 1, error: { code: 1, message: "x" } }), null);
 });

@@ -87,8 +87,13 @@ const rpc = (id, body) => ({ jsonrpc: "2.0", id, ...body });
 export const parseError = () => rpc(null, { error: { code: -32700, message: "parse error" } });
 
 export async function handleMcp(msg, { decide, onInitialize } = {}) {
-  if (msg === null || typeof msg !== "object" || Array.isArray(msg)) return rpc(null, { error: { code: -32600, message: "invalid request" } });
-  if (typeof msg.method !== "string") return null; // a response to a server request; we never send any
+  const invalid = (id = null) => rpc(id, { error: { code: -32600, message: "invalid request" } });
+  if (msg === null || typeof msg !== "object" || Array.isArray(msg)) return invalid();
+  const validId = typeof msg.id === "string" || (typeof msg.id === "number" && Number.isFinite(msg.id));
+  if (msg.jsonrpc !== "2.0") return invalid(validId ? msg.id : null);
+  if (msg.method === undefined && ("result" in msg || "error" in msg)) return null; // a response to us; we never ask anything
+  if (typeof msg.method !== "string") return invalid(validId ? msg.id : null);
+  if ("id" in msg && !validId) return invalid();
   const notification = !("id" in msg);
   if (notification) return null; // notifications/initialized, cancelled, ...: never answered
   const reply = (result) => rpc(msg.id, { result });

@@ -85,15 +85,18 @@ const fieldOf = (q) => (q.type === "choice" ? "choice" : "score");
 // A vote counts only if it has the exact shape the schema promises. The warm Claude path has no schema enforcement,
 // and even strict mode can't bound numbers, so an out-of-range vote is dropped (and so escalates) rather than averaged.
 const isProb = (v) => typeof v === "number" && v >= 0 && v <= 1;
+// Exactly these keys, as the strict schema says (additionalProperties: false)
+const exactKeys = (o, keys) => o && typeof o === "object" && !Array.isArray(o) && Object.keys(o).length === keys.length && keys.every((k) => Object.hasOwn(o, k));
 export function validVote(q, a) {
-  if (!a || typeof a !== "object") return false;
+  const fields = q.type === "bool" ? ["p_yes", "abstain", "evidence", "missing"] : [fieldOf(q), "probs", "evidence", "missing"];
+  if (!exactKeys(a, fields)) return false;
   // evidence and missing are required by the schema; a vote without them didn't follow it
   if (typeof a.evidence !== "string" || typeof a.missing !== "string") return false;
   if (q.type === "bool") return isProb(a.p_yes) && typeof a.abstain === "boolean";
   const keys = keysOf(q);
   // Exactly a string key: String(["abstain"]) would pass an includes check yet slip past the === "abstain" test in combine
   const pick = a[fieldOf(q)];
-  if (typeof pick !== "string" || !keys.includes(pick) || !a.probs || typeof a.probs !== "object") return false;
+  if (typeof pick !== "string" || !keys.includes(pick) || !exactKeys(a.probs, keys)) return false;
   // Weights may be unnormalized (they are normalized before averaging), but must be finite, non-negative and not all zero
   const w = keys.map((k) => a.probs[k]);
   return w.every((v) => Number.isFinite(v) && v >= 0) && w.some((v) => v > 0);

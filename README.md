@@ -81,7 +81,7 @@ A request that breaks a rule is rejected before any model runs. Over MCP the too
 | `medium` (default) | 0.75 |
 | `high` | 0.90 |
 
-A question also escalates when any model abstains, when the two models disagree, or when a model failed to answer. An answer of the wrong shape counts as a failed answer: a choice outside the options, a probability outside 0–1, or a missing weight. `missing` carries what an abstaining model said it would need.
+A question also escalates when any model abstains, when the two models disagree, or when a model failed to answer. An answer of the wrong shape counts as a failed answer: a choice outside the options, a `p_yes` outside 0–1, a missing, negative or extra weight, or any field the schema doesn't have. Weights in `probs` need not sum to 1; they are normalized before averaging. `missing` carries what an abstaining model said it would need.
 
 Requests are checked before any model runs. An unknown `risk`, duplicate question ids, a reserved or repeated option, or a malformed `scale` is an error, not a silent default.
 
@@ -90,7 +90,7 @@ Requests are checked before any model runs. An unknown `risk`, duplicate questio
 - **Abstain with a reason.** Every question has an explicit `abstain` option, and the model is told never to guess facts that are not in `state`.
 - **Grounded evidence.** Each vote must quote at most 20 words verbatim from `state`. `why` only shows a quote that is actually in `state`, so a made-up justification never reaches you.
 - **Rules kept separate from facts.** `rules` are listed by priority apart from `state`, so policy and facts don't blur together.
-- **Optional second opinion.** With `CEV_CODEX=1`, Codex answers too, and a decision is only auto-answered when both agree. The two come from different labs and can fail in different ways. In the benchmarks below, though, it caught no error that Claude alone made, so it is off by default.
+- **Optional second opinion.** With `CEV_CODEX=1`, Codex answers too, and a decision that both models were asked is only auto-answered when they agree. Requests where every question is `low` risk and none is a `score` still go to Claude alone. The two come from different labs and can fail in different ways. In the benchmarks below, though, it caught no error that Claude alone made, so it is off by default.
 - **Risk-scaled thresholds.** The more a wrong answer costs, the higher the confidence an auto-answer needs.
 - **Full log.** Every decision is appended to `~/.cev/log.jsonl`, with every vote, timing, token counts and which session asked.
 
