@@ -90,6 +90,7 @@ if (!result) {
     }
   }
 }
+if (deadlineMs && left() < 0) result = late(); // an answer that came after the deadline is not an answer
 // Written synchronously and followed by an explicit exit: a daemon start-up still polling after the deadline must
 // not keep this process alive
 writeSync(1, JSON.stringify(flags.has("--full") ? result : { answers: result.answers, ms: result.meta.ms, ...(result.meta.replay && { replay: true }) }, null, 1) + "\n");

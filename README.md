@@ -95,7 +95,7 @@ Each decision runs in a fresh Claude process with no tools, no settings, no memo
 
 | model | answered right | answered **wrong** | escalated |
 |---|---|---|---|
-| Opus 5.5 (default) | 240 | **0** | 60 |
+| Opus 5.5 (default) | 238 | **0** | 62 |
 | Sonnet 5.5 | 239 | **1** | 60 |
 
 - This is what was observed on this benchmark with this model, not a measured error rate for your workload.

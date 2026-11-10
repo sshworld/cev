@@ -292,7 +292,12 @@ export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort =
     } else {
       claudes = claudes.filter((p) => !p.dead);
       const proc = claudes.shift() ?? new ClaudeProc({ model: claudeModel, effort: claudeEffort, onModel });
-      fill();
+      try {
+        fill();
+      } catch (e) {
+        proc.kill(); // the replacement couldn't be started (disk full, no permission): don't strand the one taken out
+        throw e;
+      }
       r = left() <= 0 ? { ok: false, error: "deadline passed", ms: 0, tokensIn: 0, tokensOut: 0 } : await proc.ask(req, { timeout: Math.min(defaultTimeout, left()) });
       if (!r.ok && !proc.dead) proc.kill();
     }

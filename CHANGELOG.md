@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.1 — 2026-11-10
+
+### Fixed
+
+- `cev decide --deadline-ms` could print an answer that arrived after the deadline on the cold path. It now escalates.
+- A warm Claude process taken from the pool was left running when its replacement could not be started.
+
+### Measured
+
+- The 300 cases again on Opus with the 1.3.0 score rule: 238 answered right, **0 wrong**, 62 escalated (2 of them cases it used to answer, correctly). `bench/results/models-v130.json`.
+
 ## 1.3.0 — 2026-11-10
 
 This release came out of a three-round design review with Codex. The agreed items are in; what was contested is listed at the end.
@@ -34,7 +45,7 @@ This release came out of a three-round design review with Codex. The agreed item
 
 ### Not verified
 
-- How many more score questions escalate on the 300-case benchmark: the stored results don't keep per-level probabilities, and the benchmark was not re-run.
+- How many more score questions escalate on the 300-case benchmark (measured in 1.3.1: two).
 - Replay across a model alias change: the key holds the resolved model and the pool forgets it when it is respawned (every 6 hours), but no test moves an alias. While only replay hits arrive, a moved alias is noticed at the next respawn or the next day, not at once.
 
 ## 1.2.1 — 2026-11-10
