@@ -78,6 +78,37 @@ Measured on 2026-11-10 with lean Claude alone, on 300 cases: the 60 above plus 2
 
 Reproduce with `npm run bench:models`, `npm run bench:stability` and `node bench/local.mjs --url <llama.cpp server>`.
 
+## The warm path
+
+The accuracy tables above asked each case cold: one new CLI process per case, with the CLI enforcing the answer's JSON schema. The daemon does not work that way. It keeps processes warm and puts the schema in the prompt. Until 1.4.0 the warm path had only been run on the first 60 cases.
+
+Run on all 300 (2026-11-10, Opus 5.5, `bench/warm.mjs`, three at a time):
+
+| warm path | answered right | answered **wrong** | escalated | cold retries | median |
+|---|---|---|---|---|---|
+| CLI default effort (before 1.4.0), 300 cases | 240 | **0** | 60 | 8 | 1.68s |
+| same, 26 boundary and band-table cases four times each | 101 | **2** | 1 | 13 | 1.93s |
+| `high` effort (1.4.0 default), 300 cases | 241 | **0** | 59 | 1 | 1.72s |
+| same, the 26 cases four times each | 104 | **0** | 0 | 1 | 1.69s |
+
+- **The wrong answer** was one case both times (`xa-40`): 70 GB free at 10 GB a day is exactly 7 days, and the rule says "fewer than 7" for the higher level. At the default effort the warm model answered the higher level with confidence 0.98 in 2 of its 4 repeats. The run of 300 in the table got it right; an earlier run of 300, whose file was not kept, got it wrong once.
+- **Why cold was better:** cold calls spent about twice the output tokens. The warm model often answered straight away, and when it did work the sum out first it wrote that working before the JSON, which fails the shape check and costs a cold retry.
+- **At `high` effort** the model does most of that working in its thinking: no wrong answer, and one cold retry in each run where the old setting had 8 and 13. Median latency is the same within run-to-run noise.
+- The cold path at `high` effort: 240 right, 0 wrong, 60 escalated (`bench/results/models-high.json`).
+- So the "0 wrong in 300" in earlier releases was true of the cold path and not of what the daemon ran.
+
+Results are in `bench/results/warm-*.json`. In those files a case that needed a cold retry is timed by the retry alone; the benchmark now times the whole decision. That affects 1 row in each `high` run and 8 and 13 rows in the default-effort runs.
+
+What did not make it faster. These were one-off probes during development; apart from the 300-case runs above, no result files were kept for them:
+
+- **Taking the answer when its last token arrives**, without waiting for the CLI's result: the result follows 8ms later (median of 20 runs, 5–13ms).
+- **Returning before the evidence quote is written:** rejected without a benchmark. The checks on the answer's shape need the whole answer, so a cut-off one could be accepted where the full one would be refused.
+- **A shorter answer format** (one confidence, no per-option probabilities): same accuracy on 300 cases, no time saved. The answer does not arrive token by token: one small piece comes at about 0.8s and the rest in a single burst when the model has finished.
+- **Reusing a process for a second decision**, to save connection set-up: the second turn was no faster than the first.
+- **Switching thinking off:** neither `MAX_THINKING_TOKENS=0` nor `alwaysThinkingEnabled: false` stopped it.
+
+Reproduce with `npm run bench:warm -- --concurrency 3` (add `--kinds "boundary|band-table" --runs 4`, or put `CEV_CLAUDE_EFFORT=default` in front for the old setting).
+
 ## Caveats
 
 - **Small sample.** 60 synthetic cases is a sanity check, not a general evaluation. Opus is strong enough that these cases didn't produce a confident error from either system. A harder or noisier set is where a second model would have to earn its keep.

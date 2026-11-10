@@ -108,7 +108,7 @@ rm -rf ~/.cev                          # the request log and the daemon's workin
 - **Lean context.**
   - Claude runs with no tools, no settings sources, an empty strict MCP config and a short system prompt: about 1.6k input tokens per decision.
   - Codex runs from a separate `CODEX_HOME` that shares only `auth.json`, with its shell, apps, plugins, memories and environment context turned off: about 6.2k input tokens.
-- **Routing.** By default only Claude is asked (about 1.5s warm), and no Codex process is started. With `CEV_CODEX=1`, `route` in `core/cev.mjs` decides which requests also go to Codex (about 2–4s warm with both).
+- **Routing.** By default only Claude is asked (about 1.7s warm), and no Codex process is started. With `CEV_CODEX=1`, `route` in `core/cev.mjs` decides which requests also go to Codex (about 2–4s warm with both).
 - **Failure handling.**
   - If a warm process has died, times out (90s) or returns an answer of the wrong shape, that one model is asked again cold, in a fresh process.
   - If the Codex server dies, or stalls anywhere before answering, everything waiting on it fails over to cold. A new server is started for the next decision.
@@ -170,7 +170,7 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 | `CEV_PORT` | `7767` | daemon port (loopback only) |
 | `CEV_CODEX` | off | `1` adds Codex as a second opinion |
 | `CEV_CLAUDE_MODEL` | `opus` | which Claude answers: an alias (`opus`, `sonnet`, `haiku`) or a full model id. See [Which model](benchmarks.md#which-model) before changing it |
-| `CEV_CLAUDE_EFFORT` | CLI default | `low`, `medium`, `high`, `xhigh` or `max` |
+| `CEV_CLAUDE_EFFORT` | `high` | `low`, `medium`, `high`, `xhigh`, `max`, or `default` to leave it to the CLI. At the CLI default the warm path got a boundary case wrong in our benchmark: see [the warm path](benchmarks.md#the-warm-path) |
 | `CEV_REPLAY` | on | `0` turns replay off: every request is asked fresh |
 | `CEV_GATE` | `shadow` | command gate mode: `shadow`, `enforce` or `off`. Set it where Claude Code reads its environment, for example `"env"` in `~/.claude/settings.json` |
 | `CEV_POOL` | `2` | warm Claude processes and spare Codex threads |

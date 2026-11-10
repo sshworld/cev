@@ -1,6 +1,6 @@
 {
   "name": "cev",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Hand bounded decisions to an isolated Claude call over MCP, with an optional Codex second opinion: typed questions in, an answer or an escalation out.",
   "type": "module",
   "license": "MIT",
@@ -19,6 +19,7 @@
     "bench:multi": "node bench/multi.mjs",
     "bench:models": "node bench/models.mjs --files cases.json,cases-hard.json,cases-x-a.json,cases-x-b.json,cases-x-c.json,cases-x-d.json --arms opus,sonnet",
     "bench:stability": "node bench/stability.mjs",
+    "bench:warm": "node bench/warm.mjs",
     "bench:gate": "node bench/gate.mjs"
   },
   "private": true

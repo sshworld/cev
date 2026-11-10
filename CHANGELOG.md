@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.4.0 — 2026-11-10
+
+This release set out to make decisions faster. It did not: nothing tried moved the median. What it found instead is a wrong answer the earlier benchmarks had missed, and it fixes that.
+
+### Fixed
+
+- **The warm path could answer a boundary case wrong.** The accuracy numbers on the full 300 cases came from cold calls, one new CLI process per case. Run through the warm pool the daemon really uses, one case (`xa-40`, a value exactly on a band boundary) was answered wrong with confidence 0.98 in 2 of 4 repeats. Claude's effort now defaults to `high`. At `high` there was no wrong answer in 300 cases plus 104 repeats of the boundary cases on the warm path, or in 300 cases cold.
+- Fewer cold retries. At the old setting the warm model often wrote its working before the JSON, which fails the shape check and costs a second, cold call: 8 in 300 cases and 13 in 104 boundary repeats. At `high`: 1 and 1.
+
+### Added
+
+- `bench/warm.mjs` (`npm run bench:warm`): accuracy and latency through the warm path.
+- `CEV_CLAUDE_EFFORT=default` leaves the effort to the CLI, as before 1.4.0.
+
+### Measured
+
+- Warm median over 300 cases, three at a time: 1.72s at `high`, 1.68s at the old setting. 90th percentile 2.52s and 2.49s.
+- The gate benchmark at `high` effort: 30 of 30 dangerous commands asked, 11 of 14 harmless ones passed.
+
+### Not done, and why
+
+The timings below are from one-off probes; no result files were kept for them.
+
+- **Returning as soon as the answer's last token arrives:** the CLI's own result follows 8ms later (median of 20 runs), so there is nothing to save.
+- **Returning before the evidence quote is written:** an answer cut short cannot be checked for a valid ending, so it could accept output the full check would reject.
+- **A shorter answer format**, **reusing a process for a second decision**, **switching thinking off**: measured, no gain. See [docs/benchmarks.md](docs/benchmarks.md#the-warm-path).
+- **0.5s:** out of reach through the CLI. About 0.8s passes before the first piece of the answer arrives, and the rest comes in one burst at the end.
+
+### Not verified
+
+- The warm path at `high` effort on more than one full run of the 300 cases.
+- Whether `high` uses noticeably more of a subscription's quota than the old setting.
+
 ## 1.3.1 — 2026-11-10
 
 ### Fixed

@@ -30,13 +30,18 @@ Read STATE and RULES, then answer every QUESTION using only them.
 export const codexEnabled = () => process.env.CEV_CODEX === "1";
 
 // Which Claude answers, and how hard it thinks. An alias ("opus") follows the newest model of that tier; a full id
-// pins one. Unset effort leaves the CLI's default. A bad value throws: a typo must not silently pick another model.
+// pins one. A bad value throws: a typo must not silently pick another model.
+// Effort defaults to "high". At the CLI's own default the warm path answered a boundary case wrong in 2 of 4 repeats
+// (bench xa-40: exactly 7 days read as "fewer than 7") and often wrote its working before the JSON, which failed the
+// shape check and cost a cold retry (8 in 300 cases). At "high": no wrong answer in 300 cases plus 104 repeats, and
+// 1 retry in 300, at the same latency.
 export const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
 export function claudeConfig(env = process.env) {
   const model = env.CEV_CLAUDE_MODEL || "opus";
-  const effort = env.CEV_CLAUDE_EFFORT || undefined;
+  let effort = env.CEV_CLAUDE_EFFORT || "high";
+  if (effort === "default") effort = undefined; // leave it to the CLI, as cev did before 1.4.0 (kept to reproduce the benchmark)
   if (!/^[A-Za-z0-9][A-Za-z0-9._[\]-]{0,63}$/.test(model)) throw new Error(`CEV_CLAUDE_MODEL is not a model name: ${JSON.stringify(model)}`);
-  if (effort !== undefined && !EFFORTS.includes(effort)) throw new Error(`CEV_CLAUDE_EFFORT must be one of ${EFFORTS.join(", ")}`);
+  if (effort !== undefined && !EFFORTS.includes(effort)) throw new Error(`CEV_CLAUDE_EFFORT must be one of ${EFFORTS.join(", ")}, default`);
   return { model, effort };
 }
 

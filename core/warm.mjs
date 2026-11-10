@@ -38,7 +38,7 @@ class ClaudeProc {
       } catch {
         return;
       }
-      // The CLI names the model an alias resolved to as soon as it starts: replay keys on it, so a moved alias misses
+      // The CLI names the model an alias resolved to when it gets its first request: replay keys on it, so a moved alias misses
       if (ev.type === "system" && ev.subtype === "init" && typeof ev.model === "string") (this.model = ev.model), onModel?.(ev.model);
       if (ev.type === "result") this.waiters.shift()?.(ev);
     });

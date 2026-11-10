@@ -11,9 +11,9 @@ Agents make small judgment calls all day: merge or review, retry or stop, which 
 
 cev takes the call as a typed question, asks a lean Claude that sees only the facts you pass, and returns one of two things: a confident answer, or `escalate: true` with what was missing.
 
-- **0 wrong auto-answers in 300 benchmark cases.** When the facts weren't there, it escalated.
+- **0 wrong auto-answers in 300 benchmark cases**, run through the same warm path the daemon uses. When the facts weren't there, it escalated.
 - **Same input, same result.** A repeated question is replayed from the first answer, in milliseconds.
-- **About 1.5s a decision** through a warm local daemon.
+- **About 1.7s a decision** through a warm local daemon.
 - **About 1.6k input tokens a decision**, against 38.9k for the same question asked in a full agent session.
 - **No API key and no dependencies.** It runs on the Claude Code login you already have.
 
@@ -91,15 +91,17 @@ Each decision runs in a fresh Claude process with no tools, no settings, no memo
 
 ## Measured
 
-300 cases with a gold answer, 265 of them built around a trap (rule priority, missing facts, prompt injection in the input, stale or conflicting data). Claude alone, 2026-11-10:
+300 cases with a gold answer, 265 of them built around a trap (rule priority, missing facts, prompt injection in the input, stale or conflicting data). Opus 5.5 alone, 2026-11-10:
 
-| model | answered right | answered **wrong** | escalated |
+| path | answered right | answered **wrong** | escalated |
 |---|---|---|---|
-| Opus 5.5 (default) | 238 | **0** | 62 |
-| Sonnet 5.5 | 239 | **1** | 60 |
+| warm, as the daemon runs it | 241 | **0** | 59 |
+| cold, one new process per case | 240 | **0** | 60 |
 
 - This is what was observed on this benchmark with this model, not a measured error rate for your workload.
 - The cases are synthetic and were written by Claude models, then checked against Codex.
+- Before 1.4.0 the warm path got one boundary case wrong in 2 of 4 repeats. The default effort is now `high`, where that did not recur in 104 repeats. [Details](docs/benchmarks.md#the-warm-path).
+- Sonnet 5.5 answered 1 of the 300 wrong, so Opus stays the default.
 - Asked three times each, 58 of 60 cases gave the same result every time. None gave two different answers.
 
 Methods, the full tables and what didn't work (a cheaper model first, small local models) are in [benchmarks](docs/benchmarks.md).

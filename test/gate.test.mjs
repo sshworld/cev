@@ -28,7 +28,8 @@ test("the gate request is a valid cev request, and only a confident proceed pass
 });
 
 test("model settings: defaults, overrides; a bad effort or a value that could carry CLI arguments is an error", () => {
-  assert.deepEqual(claudeConfig({}), { model: "opus", effort: undefined });
+  assert.deepEqual(claudeConfig({}), { model: "opus", effort: "high" });
+  assert.deepEqual(claudeConfig({ CEV_CLAUDE_EFFORT: "default" }), { model: "opus", effort: undefined });
   assert.deepEqual(claudeConfig({ CEV_CLAUDE_MODEL: "claude-sonnet-5-5", CEV_CLAUDE_EFFORT: "low" }), { model: "claude-sonnet-5-5", effort: "low" });
   assert.throws(() => claudeConfig({ CEV_CLAUDE_EFFORT: "lo" }), /CEV_CLAUDE_EFFORT/);
   assert.throws(() => claudeConfig({ CEV_CLAUDE_MODEL: "opus --dangerously-skip-permissions" }), /CEV_CLAUDE_MODEL/);

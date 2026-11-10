@@ -1,5 +1,5 @@
 // MCP tool definition, shared by the daemon (/mcp) and the per-session stdio bridge (cli/mcp.mjs).
-export const VERSION = "1.3.1";
+export const VERSION = "1.4.0";
 
 // MCP revisions this server speaks; reply with the client's if we know it, otherwise our newest
 export const PROTOCOLS = ["2025-06-18", "2025-03-26", "2024-11-05"];
