@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.1 — 2026-11-10
+
+### Changed
+
+- **The plugin's command gate works on install.** It is registered in `enforce` mode, so nothing has to be set: before a shell command that is hard to undo, cev decides whether it runs as usual or asks you first. `CEV_GATE=off` turns it off, `CEV_GATE=shadow` only records. 1.2.0 installed it switched off.
+- The README is shorter; the reference and the benchmarks moved to `docs/`.
+
+### Not verified
+
+- The gate over days of real sessions. Its pattern list and its 0.75 bar were fitted on 44 labelled commands, and it adds a decision (about 1.5s warm) to roughly one shell command in ten.
+
 ## 1.2.0 — 2026-11-10
 
 ### Added

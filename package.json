@@ -1,6 +1,6 @@
 {
   "name": "cev",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Hand bounded decisions to an isolated Claude call over MCP, with an optional Codex second opinion: typed questions in, an answer or an escalation out.",
   "type": "module",
   "license": "MIT",

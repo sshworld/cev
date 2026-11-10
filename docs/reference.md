@@ -137,14 +137,15 @@ The daemon also serves `POST /decide` (plain JSON), `GET /health`, `POST /retire
 
 `cli/gate.mjs` is a Claude Code `PreToolUse` hook. For a shell command whose shape can be hard to undo (`git push`, `rm -r`, `kubectl delete`, a publish or deploy and so on) it asks cev whether the command should run without the user confirming. Other commands pass without a model call.
 
-The plugin registers it for you, switched off: set `CEV_GATE` to turn it on. Without the plugin, register it yourself (it then defaults to `shadow`):
+The plugin registers it for you in `enforce` mode. Without the plugin, register it yourself (it then defaults to `shadow`; add `--default enforce` to the command to change that):
 
 ```json
 { "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/cev/cli/gate.mjs" }] }] } }
 ```
 
-- `CEV_GATE=shadow` (the default) only records each decision in `~/.cev/gate.jsonl`, in the background: once the hook input is read the command goes ahead without waiting for the decision. Run it this way first and read the log.
-- `CEV_GATE=enforce` returns `"ask"` when cev does not clearly say `proceed`, so the user confirms. It never returns `"allow"` or `"deny"`: a command it passes still goes through Claude Code's own permission checks.
+- `CEV_GATE=shadow` only records each decision in `~/.cev/gate.jsonl`, in the background: once the hook input is read the command goes ahead without waiting for the decision. Run it this way first and read the log.
+- `CEV_GATE=off` does nothing.
+- `CEV_GATE=enforce` (what the plugin uses) returns `"ask"` when cev does not clearly say `proceed`, so the user confirms. It never returns `"allow"` or `"deny"`: a command it passes still goes through Claude Code's own permission checks.
 - **It is not a safety boundary.** The pattern list that decides which commands are looked at missed 8 of 20 dangerous commands written after it (`bench/gate-holdout.json`). Treat it as a second look at familiar risky commands, and keep your permission settings as they are.
 
 ## Configuration
@@ -157,7 +158,7 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 | `CEV_CODEX` | off | `1` adds Codex as a second opinion |
 | `CEV_CLAUDE_MODEL` | `opus` | which Claude answers: an alias (`opus`, `sonnet`, `haiku`) or a full model id. See [Which model](benchmarks.md#which-model) before changing it |
 | `CEV_CLAUDE_EFFORT` | CLI default | `low`, `medium`, `high`, `xhigh` or `max` |
-| `CEV_GATE` | `shadow` | command gate mode: `shadow`, `enforce` or `off` |
+| `CEV_GATE` | `enforce` with the plugin, `shadow` otherwise | command gate mode: `shadow`, `enforce` or `off`. Set it where Claude Code reads its environment, for example `"env"` in `~/.claude/settings.json` |
 | `CEV_POOL` | `2` | warm Claude processes and spare Codex threads |
 | `CEV_CONCURRENCY` | `4` | decisions in flight; the rest queue |
 | `CEV_MAX_QUEUE` | `32` | decisions allowed to wait; more get 503 |

@@ -66,15 +66,16 @@ test("hook: shadow mode logs and never interferes; enforce asks the user when ce
   assert.equal(hook(bash("git push --force origin main"), { CEV_GATE: "off" }).log.length, 0);
 });
 
-test("plugin: the hook it registers is off until CEV_GATE is set, and the manifest carries the release version", async () => {
-  const run = (env) => spawnSync(process.execPath, [join(ROOT, "cli/gate.mjs"), "--default-off"], { input: JSON.stringify(bash("git push --force origin main")), env: { HOME: mkdtempSync(join(tmpdir(), "cev-gate-")), PATH: "/nonexistent", CEV_PORT: "1", ...env }, encoding: "utf8", timeout: 20_000 });
-  assert.deepEqual([run({}).status, run({}).stdout], [0, ""]);
-  assert.equal(JSON.parse(run({ CEV_GATE: "enforce" }).stdout).hookSpecificOutput.permissionDecision, "ask");
+test("plugin: the hook it registers enforces without any setting, CEV_GATE still overrides, and the manifest carries the release version", async () => {
+  const run = (env) => spawnSync(process.execPath, [join(ROOT, "cli/gate.mjs"), "--default", "enforce"], { input: JSON.stringify(bash("git push --force origin main")), env: { HOME: mkdtempSync(join(tmpdir(), "cev-gate-")), PATH: "/nonexistent", CEV_PORT: "1", ...env }, encoding: "utf8", timeout: 20_000 });
+  assert.equal(JSON.parse(run({}).stdout).hookSpecificOutput.permissionDecision, "ask");
+  assert.deepEqual([run({ CEV_GATE: "off" }).status, run({ CEV_GATE: "off" }).stdout], [0, ""]);
+  assert.deepEqual([run({ CEV_GATE: "shadow" }).status, run({ CEV_GATE: "shadow" }).stdout], [0, ""]);
   const manifest = JSON.parse(readFileSync(join(ROOT, ".claude-plugin/plugin.json"), "utf8"));
   const hooks = JSON.parse(readFileSync(join(ROOT, "hooks/hooks.json"), "utf8"));
   assert.equal(manifest.version, (await import("../core/tool.mjs")).VERSION);
   assert.equal(manifest.version, JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version);
-  assert.match(hooks.hooks.PreToolUse[0].hooks[0].command, /gate\.mjs" --default-off$/);
+  assert.match(hooks.hooks.PreToolUse[0].hooks[0].command, /gate\.mjs" --default enforce$/);
 });
 
 test("hook: a mistyped mode is treated as enforce, not as shadow", () => {

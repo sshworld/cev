@@ -8,7 +8,7 @@
     {
       "name": "cev",
       "source": "./",
-      "description": "The cev_decide tool, plus an experimental command gate hook that stays off until you set CEV_GATE."
+      "description": "The cev_decide tool, plus a command gate hook that asks you before shell commands that are hard to undo."
     }
   ]
 }

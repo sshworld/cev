@@ -14,8 +14,9 @@ import { isRisky, gateRequest, passes, MAX_COMMAND } from "../core/gate.mjs";
 import { BASE, ensureDaemon } from "../core/client.mjs";
 
 // A mistyped mode must not quietly become "only record": someone who wrote "enforced" believes commands are checked
-// The plugin registers this hook for everyone who installs it, so there it stays off until CEV_GATE is set
-let MODE = process.env.CEV_GATE || (process.argv.includes("--default-off") ? "off" : "shadow");
+// CEV_GATE wins; without it the mode is what the hook was registered with (`--default enforce` in the plugin), else shadow
+const dflt = process.argv.indexOf("--default");
+let MODE = process.env.CEV_GATE || (dflt > 0 ? String(process.argv[dflt + 1]) : "shadow");
 if (!["shadow", "enforce", "off"].includes(MODE)) {
   console.error(`cev gate: CEV_GATE must be shadow, enforce or off (got "${MODE.slice(0, 40)}"); using enforce`);
   MODE = "enforce";

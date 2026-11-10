@@ -24,7 +24,12 @@ In Claude Code:
 /plugin install cev --marketplace sshworld/cev
 ```
 
-New sessions get one tool, `cev_decide`. That's all: the daemon starts on the first decision and exits when idle.
+That's all, with nothing to configure. New sessions get:
+
+- **`cev_decide`**, the decision tool.
+- **The command gate.** Before a shell command that is hard to undo (`git push`, `rm -r`, a deploy or publish), cev takes a second look. Clearly safe ones run as usual; the rest ask you first. Turn it off with `CEV_GATE=off`.
+
+The daemon starts on the first decision and exits when idle.
 
 Needs Node.js 20+ and a logged-in [Claude Code](https://docs.claude.com/en/docs/claude-code). Codex, plain MCP and the command line are covered in [other ways to install](docs/reference.md#other-ways-to-install).
 
@@ -102,13 +107,12 @@ Methods, the full tables and what didn't work (a cheaper model first, small loca
 
 Use it for bounded calls with fixed options, especially many in a row or with nobody watching: triage, routing, go/no-go checks, rubric scoring.
 
-Don't use it for open-ended work, or as a safety boundary. In a live conversation, an unsure call is usually better put to the person directly.
+Don't use it for open-ended work, or as a safety boundary: the gate only looks at command shapes it knows, and it missed 8 of 20 dangerous commands written after its list. In a live conversation, an unsure call is usually better put to the person directly.
 
 ## Also in the box
 
 - **Command line:** `cev decide request.json`, for scripts and scheduled jobs.
 - **Codex as a second opinion:** `CEV_CODEX=1`. Both models must agree before anything is auto-answered.
-- **Command gate (experimental):** a Claude Code hook that takes a second look at shell commands that are hard to undo. Installed switched off.
 
 All settings, the HTTP endpoints and uninstalling are in the [reference](docs/reference.md). Changes per release are in the [changelog](CHANGELOG.md).
 
