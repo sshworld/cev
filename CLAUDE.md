@@ -29,6 +29,7 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
 | `core/gate.mjs` | command gate: the risky-shape patterns, the gate request and its pass rule |
 | `cli/cev.mjs` | CLI: starts the daemon if needed, cold fallback when it can't |
 | `.claude-plugin/`, `hooks/hooks.json` | Claude Code plugin: manifest with the MCP bridge, marketplace entry, and the gate hook registered with `--default-off`. `plugin.json` version must match `core/tool.mjs` |
+| `docs/` | `reference.md` (request format, settings, how it runs, gate, uninstall) and `benchmarks.md`. The README stays short: detail goes here |
 | `cli/gate.mjs` | Claude Code `PreToolUse` hook for the command gate (shadow by default; only ever returns "ask") |
 | `bench/` | cases, runners, analysis, report generator, recorded results |
 
