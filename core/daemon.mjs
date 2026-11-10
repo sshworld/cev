@@ -8,8 +8,9 @@
 // - POST /retire  exit if idle (a bridge of another version replaces the daemon this way)
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { route, checkRequest, codexEnabled, claudeConfig, appendLog, ensureHome } from "./cev.mjs";
+import { route, checkRequest, combine, codexEnabled, claudeConfig, appendLog, ensureHome } from "./cev.mjs";
 import { warmDecider } from "./warm.mjs";
+import { openReplay, keyOf } from "./replay.mjs";
 import { VERSION, PROTOCOLS, handleMcp, parseError } from "./tool.mjs";
 
 const env = (k, d) => process.env[k] ?? d;
@@ -21,42 +22,88 @@ const CODEX = codexEnabled();
 const IDLE_MS = Number(env("CEV_IDLE_MIN", 30)) * 60_000;
 const MAX_AGE_MS = Number(env("CEV_MAX_AGE_H", 6)) * 3_600_000; // respawn the pool now and then to pick up CLI updates and refreshed auth
 
+const REPLAY = env("CEV_REPLAY", "1") !== "0" ? openReplay() : null;
+const pending = new Map(); // replay key → the decision already under way for it, so identical requests share one
+
 let decider = null; // created only after the port is ours, so racing daemons don't each spawn a pool
 let awakeSince = Date.now();
 let lastUsed = Date.now();
-const stats = { served: 0, failed: 0, fallbacks: 0, startedAt: new Date().toISOString() };
+const stats = { served: 0, failed: 0, fallbacks: 0, replayed: 0, startedAt: new Date().toISOString() };
 
 // ── Concurrency cap: queue whatever exceeds the pool ──
 let inflight = 0;
 const queue = [];
-const acquire = () => (inflight < CONCURRENCY ? (inflight++, Promise.resolve()) : new Promise((r) => queue.push(r)));
+// A caller with a deadline leaves the queue when it passes: its slot request is withdrawn, never granted late
+const acquire = (deadlineAt) => {
+  if (inflight < CONCURRENCY) return inflight++, Promise.resolve(true);
+  return new Promise((resolve) => {
+    const grant = () => (clearTimeout(timer), resolve(true));
+    const timer = deadlineAt === undefined ? undefined : setTimeout(() => (queue.splice(queue.indexOf(grant), 1), resolve(false)), Math.max(0, deadlineAt - performance.now()));
+    queue.push(grant);
+  });
+};
 const release = () => (queue.length ? queue.shift()() : inflight--);
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
-async function decideShared(req, caller) {
+// Nothing answered in time: every question escalates, the same shape a failed model call gives
+const unanswered = (req, why, t0) => ({ answers: combine(req, [null]), votes: {}, meta: { ms: Math.round(performance.now() - t0), models: {}, error: why } });
+
+async function decideShared(req, caller, { deadlineMs } = {}) {
   checkRequest(req);
-  if (inflight >= CONCURRENCY && queue.length >= MAX_QUEUE) throw httpError(503, `cev busy: ${queue.length} decisions queued, try again shortly`);
-  const tq = performance.now();
-  await acquire();
-  const waitMs = Math.round(performance.now() - tq);
-  try {
-    if (!decider.awake()) awakeSince = Date.now();
+  const t0 = performance.now();
+  const deadlineAt = deadlineMs > 0 ? t0 + deadlineMs : undefined;
+  const models = route(req, { codex: CODEX });
+  // Replay covers Claude-only decisions. The key needs the model a warm process has reported, so until one has,
+  // nothing is looked up or stored.
+  const replayable = REPLAY && models.length === 1 && models[0] === "claude";
+  const key = replayable ? keyOf(req, { model: decider.identity(), effort: CLAUDE.effort }) : null;
+  const logged = (r) => (appendLog({ at: new Date().toISOString(), caller, req, ...r }), r);
+  const hit = REPLAY?.get(key, req);
+  if (hit) {
+    stats.replayed++;
     lastUsed = Date.now();
-    const models = route(req, { codex: CODEX });
-    const r = await decider.decide(req, { models });
-    stats.served++;
-    stats.fallbacks += Object.values(r.meta.models).filter((m) => m.via === "cold").length;
-    r.meta.waitMs = waitMs;
-    appendLog({ at: new Date().toISOString(), caller, req, ...r });
-    return r;
-  } catch (e) {
-    stats.failed++;
-    throw e;
-  } finally {
-    lastUsed = Date.now();
-    release();
+    return logged({ answers: hit.answers, votes: hit.votes, meta: { ms: Math.round(performance.now() - t0), models: {}, replay: { at: hit.at } } });
   }
+  if (key && pending.has(key)) {
+    // A follower keeps its own deadline: it shares the leader's call, not the leader's patience
+    const late = deadlineAt === undefined ? null : new Promise((res) => setTimeout(() => res("late"), Math.max(0, deadlineAt - performance.now())).unref());
+    const r = await Promise.race([pending.get(key).catch(() => null), ...(late ? [late] : [])]);
+    // Checked by the clock as well: a timer can fire after the leader's result when the event loop was busy
+    if (r === "late" || (deadlineAt !== undefined && performance.now() > deadlineAt)) return logged(unanswered(req, "deadline passed", t0));
+    if (r) return logged({ answers: r.answers, votes: r.votes, meta: { ...r.meta, ms: Math.round(performance.now() - t0), shared: true } });
+  }
+  if (inflight >= CONCURRENCY && queue.length >= MAX_QUEUE) throw httpError(503, `cev busy: ${queue.length} decisions queued, try again shortly`);
+  const work = (async () => {
+    if (!(await acquire(deadlineAt))) return unanswered(req, "deadline passed while queued", t0);
+    const waitMs = Math.round(performance.now() - t0);
+    try {
+      if (!decider.awake()) awakeSince = Date.now();
+      lastUsed = Date.now();
+      const r = await decider.decide(req, { models, deadlineAt });
+      stats.served++;
+      // An answer that arrives after the deadline is not an answer: the caller was promised escalation by then
+      if (deadlineAt !== undefined && performance.now() > deadlineAt) return unanswered(req, "deadline passed", t0);
+      stats.fallbacks += Object.values(r.meta.models).filter((m) => m.via === "cold").length;
+      r.meta.waitMs = waitMs;
+      // Store only a decision the warm model completed cleanly, by the model the key was built for. A failure, a
+      // cold retry or a deadline is a fault, not a judgment: storing it would turn one bad moment into the answer.
+      const clean = Object.values(r.meta.models).every((m) => m.ok && m.via === "warm" && !m.warmError);
+      // The key is rebuilt from the model that actually answered. If the lookup used another one (the alias moved
+      // mid-flight) nothing is stored; if no model was known yet (first decision after start-up) this is the key.
+      const answeredKey = replayable && clean ? keyOf(req, { model: r.meta.models.claude?.model, effort: CLAUDE.effort }) : null;
+      if (answeredKey && (key === null || key === answeredKey)) REPLAY.put(answeredKey, r);
+      return r;
+    } catch (e) {
+      stats.failed++;
+      throw e;
+    } finally {
+      lastUsed = Date.now();
+      release();
+    }
+  })();
+  if (key) pending.set(key, work), work.finally(() => pending.delete(key)).catch(() => {});
+  return logged(await work);
 }
 
 // Exit entirely after sitting idle (the bridge starts a new daemon on the next decision).
@@ -108,7 +155,7 @@ const server = createServer(async (req, res) => {
     if (!localOrigin(req.headers.origin)) return send(res, 403, { error: "origin not allowed" });
     const url = new URL(req.url, "http://127.0.0.1"); // inside try: a malformed target must not take the daemon down
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, claude: CLAUDE, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
+      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, claude: CLAUDE, awake: decider.awake(), model: decider.identity(), replay: REPLAY ? REPLAY.size() : "off", codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
     }
     // A bridge of another cev version asks an idle daemon to step aside. The idle check and the exit happen here,
     // in one tick, so no decision can slip in between (a SIGTERM from outside could cut one off).
@@ -120,7 +167,7 @@ const server = createServer(async (req, res) => {
       return setImmediate(() => process.exit(0));
     }
     if (req.method === "POST" && url.pathname === "/decide") {
-      const r = await decideShared(JSON.parse(await body(req)), { via: "http", tag: url.searchParams.get("client") ?? "cli", session: url.searchParams.get("session") ?? undefined });
+      const r = await decideShared(JSON.parse(await body(req)), { via: "http", tag: url.searchParams.get("client") ?? "cli", session: url.searchParams.get("session") ?? undefined }, { deadlineMs: Number(req.headers["x-cev-deadline-ms"]) || undefined });
       return send(res, 200, r);
     }
     if (url.pathname === "/mcp") {

@@ -10,7 +10,7 @@ Everything the [README](../README.md) leaves out: the request format, when cev e
 |---|---|---|---|
 | `choice` | a probability per option plus `abstain` | the option with the highest averaged probability | both picked the same option |
 | `bool` | `p_yes` and an `abstain` flag | `true` / `false`, or `"abstain"` if either model abstained | both are on the same side of 0.5 |
-| `score` | a probability per level on `scale` (default `[1, 5]`) | an integer level | the two scores are at most one level apart; `conf` is the probability mass within ±1 |
+| `score` | a probability per level on `scale` (default `[1, 5]`) | an integer level | every model picked that exact level; `conf` is the probability on that level alone |
 
 ### Request rules
 
@@ -119,6 +119,16 @@ rm -rf ~/.cev                          # the request log and the daemon's workin
   - After 6 hours of uptime the pool is respawned between decisions, so CLI updates and refreshed logins are picked up.
 - **Concurrency.** At most 4 decisions run at once and up to 32 queue; beyond that the daemon answers 503. Request bodies are capped at 1MB. The daemon and its pool use about 400–500MB no matter how many sessions use it.
 
+## Replay
+
+The daemon stores each completed Claude-only decision and returns it for an identical request, marked `"replay"` in `meta` (and `"replay": true` from the CLI). Two identical requests arriving together share one model call.
+
+- **What "identical" means:** the same prompt text (state, rules, questions and options in the same order), the same risk levels, the same cev version, the same resolved model and effort, on the same calendar day.
+- **What is stored:** answers and escalations the model itself gave. A timeout, a malformed answer, a cold retry or a missed deadline is never stored, so a fault can't become the standing answer.
+- **What it does not do:** make an answer more right. A replayed answer is exactly as right as the first one.
+- **Dates:** the day is part of the key because a rule like "older than 7 days" can change the right answer overnight. Within a day, put the date or time in `state` if a rule depends on it.
+- Stored in `~/.cev/replay.jsonl`, today's entries only. `CEV_REPLAY=0` turns it off. Requests that also go to Codex are not replayed.
+
 ## Other ways in
 
 ```sh
@@ -127,7 +137,9 @@ cat request.json | cev decide -  # same, from stdin
 cev decide request.json --full   # include votes and per-model timing
 cev decide request.json --only claude
 cev --version
-# exit codes: 0 decided (an escalation is still a decision), 1 failed or refused, 2 usage error
+cev decide request.json --require-answer   # exit 3 if any question escalated
+cev decide request.json --deadline-ms 5000 # one limit over daemon start, queue and model; past it the questions escalate
+# exit codes: 0 decided (an escalation is still a decision), 1 failed or refused, 2 usage error, 3 escalated with --require-answer
 cev status                       # daemon health, queue, counters
 ```
 
@@ -137,15 +149,16 @@ The daemon also serves `POST /decide` (plain JSON), `GET /health`, `POST /retire
 
 `cli/gate.mjs` is a Claude Code `PreToolUse` hook. For a shell command whose shape can be hard to undo (`git push`, `rm -r`, `kubectl delete`, a publish or deploy and so on) it asks cev whether the command should run without the user confirming. Other commands pass without a model call.
 
-The plugin registers it for you in `enforce` mode. Without the plugin, register it yourself (it then defaults to `shadow`; add `--default enforce` to the command to change that):
+The plugin registers it for you. Without the plugin, register it yourself:
 
 ```json
 { "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/cev/cli/gate.mjs" }] }] } }
 ```
 
-- `CEV_GATE=shadow` only records each decision in `~/.cev/gate.jsonl`, in the background: once the hook input is read the command goes ahead without waiting for the decision. Run it this way first and read the log.
+- `CEV_GATE=shadow` (the default) only records each decision in `~/.cev/gate.jsonl`, in the background: once the hook input is read the command goes ahead without waiting for the decision. Run it this way first and read the log.
 - `CEV_GATE=off` does nothing.
-- `CEV_GATE=enforce` (what the plugin uses) returns `"ask"` when cev does not clearly say `proceed`, so the user confirms. It never returns `"allow"` or `"deny"`: a command it passes still goes through Claude Code's own permission checks.
+- `CEV_GATE=enforce` returns `"ask"` when cev does not clearly say `proceed`, so the user confirms. It never returns `"allow"` or `"deny"`: a command it passes still goes through Claude Code's own permission checks.
+- **What it asks about (in `enforce`).** A few shapes are asked about by fixed rule, with no model call: a force push, deleting a remote branch or tag, rewriting history, removing the home or root directory, dropping a database object, destroying infrastructure, overwriting a disk. Other risky shapes go to cev, which answers `proceed` or names the rule that says to confirm. A push without force is `proceed`: it can be reverted.
 - **It is not a safety boundary.** The pattern list that decides which commands are looked at missed 8 of 20 dangerous commands written after it (`bench/gate-holdout.json`). Treat it as a second look at familiar risky commands, and keep your permission settings as they are.
 
 ## Configuration
@@ -158,7 +171,8 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 | `CEV_CODEX` | off | `1` adds Codex as a second opinion |
 | `CEV_CLAUDE_MODEL` | `opus` | which Claude answers: an alias (`opus`, `sonnet`, `haiku`) or a full model id. See [Which model](benchmarks.md#which-model) before changing it |
 | `CEV_CLAUDE_EFFORT` | CLI default | `low`, `medium`, `high`, `xhigh` or `max` |
-| `CEV_GATE` | `enforce` with the plugin, `shadow` otherwise | command gate mode: `shadow`, `enforce` or `off`. Set it where Claude Code reads its environment, for example `"env"` in `~/.claude/settings.json` |
+| `CEV_REPLAY` | on | `0` turns replay off: every request is asked fresh |
+| `CEV_GATE` | `shadow` | command gate mode: `shadow`, `enforce` or `off`. Set it where Claude Code reads its environment, for example `"env"` in `~/.claude/settings.json` |
 | `CEV_POOL` | `2` | warm Claude processes and spare Codex threads |
 | `CEV_CONCURRENCY` | `4` | decisions in flight; the rest queue |
 | `CEV_MAX_QUEUE` | `32` | decisions allowed to wait; more get 503 |
@@ -173,6 +187,8 @@ The models are Claude Opus (the `opus` alias) and `gpt-6.1-sol` at `low` reasoni
 All files live under `~/.cev/`:
 
 - `log.jsonl`: every request in full (including `state`), every vote, timing and caller. Treat it like any log that may contain whatever you put in `state`. cev keeps `~/.cev` at mode 700 and the log at 600.
+- `replay.jsonl`: today's stored decisions, for replay.
+- `gate.jsonl`: what the command gate decided about each risky command, with the command text.
 - `daemon.log`: daemon start, exit and errors.
 - `run/`: the working directory for the CLIs.
 - `codex-home/`: Codex's separate home, created only when Codex is used. It contains a symlink to `~/.codex/auth.json` (a copy where symlinks aren't allowed) and a minimal `config.toml`.

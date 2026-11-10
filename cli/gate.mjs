@@ -10,13 +10,11 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { decide, HOME, ensureHome } from "../core/cev.mjs";
-import { isRisky, gateRequest, passes, MAX_COMMAND } from "../core/gate.mjs";
+import { isRisky, alwaysAsk, gateRequest, passes, REASONS, MAX_COMMAND } from "../core/gate.mjs";
 import { BASE, ensureDaemon } from "../core/client.mjs";
 
 // A mistyped mode must not quietly become "only record": someone who wrote "enforced" believes commands are checked
-// CEV_GATE wins; without it the mode is what the hook was registered with (`--default enforce` in the plugin), else shadow
-const dflt = process.argv.indexOf("--default");
-let MODE = process.env.CEV_GATE || (dflt > 0 ? String(process.argv[dflt + 1]) : "shadow");
+let MODE = process.env.CEV_GATE || "shadow";
 if (!["shadow", "enforce", "off"].includes(MODE)) {
   console.error(`cev gate: CEV_GATE must be shadow, enforce or off (got "${MODE.slice(0, 40)}"); using enforce`);
   MODE = "enforce";
@@ -82,8 +80,10 @@ if (MODE !== "enforce" && !process.env.CEV_GATE_BG) {
 const t0 = performance.now();
 let answer = null;
 let error;
+const fixed = command.length > MAX_COMMAND ? null : alwaysAsk(command); // a fixed rule: no model call needed
 // One deadline over everything: finding or starting the daemon, the decision, and the cold fallback
 const work = (async () => {
+  if (fixed) return null;
   if (command.length > MAX_COMMAND) throw new Error("command too long to judge");
   const req = gateRequest({ command, description: hook.tool_input.description, cwd: hook.cwd });
   await ensureDaemon().catch(() => {});
@@ -101,9 +101,10 @@ work.catch(() => {});
 const pass = passes(answer);
 try {
   ensureHome();
-  appendFileSync(join(HOME, "gate.jsonl"), JSON.stringify({ at: new Date().toISOString(), mode: MODE, command: command.slice(0, MAX_COMMAND), cwd: hook.cwd, pass, answer: answer?.answer ?? null, conf: answer?.conf ?? null, escalate: answer?.escalate ?? null, why: answer?.why, ms: Math.round(performance.now() - t0), ...(error && { error }) }) + "\n", { mode: 0o600 });
+  appendFileSync(join(HOME, "gate.jsonl"), JSON.stringify({ at: new Date().toISOString(), mode: MODE, command: command.slice(0, MAX_COMMAND), cwd: hook.cwd, pass, ...(fixed && { rule: fixed }), answer: answer?.answer ?? null, conf: answer?.conf ?? null, escalate: answer?.escalate ?? null, why: answer?.why, ms: Math.round(performance.now() - t0), ...(error && { error }) }) + "\n", { mode: 0o600 });
 } catch {}
 if (MODE === "enforce" && !pass) {
-  ask(error ? `cev gate could not decide (${error})` : `cev gate: ${answer?.why || answer?.missing || "this command can be hard to undo"}`);
+  const why = fixed ?? REASONS[answer?.answer] ?? (answer?.missing ? `cev could not tell whether it is safe (${answer.missing})` : "cev was not sure it is safe to run unasked");
+  ask(error ? `cev gate could not decide (${error})` : `cev gate: ${why}. Set CEV_GATE=shadow to stop these questions.`);
 }
 process.exit(0);

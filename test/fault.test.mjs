@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readdirSync, statSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
@@ -181,6 +181,82 @@ test("cli: usage errors exit 2, a daemon refusal exits 1 without a cold retry", 
   assert.equal(bad.status, 1);
   assert.match(bad.stderr, /risk/);
   assert.match(run(["--version"]).stdout, /^\d+\.\d+\.\d+/);
+  // No CLI at all: the decision escalates. That is exit 0 by default and exit 3 when the script needs an answer.
+  assert.equal(run(["decide", "-"], JSON.stringify(REQ)).status, 0);
+  const need = run(["decide", "-", "--require-answer"], JSON.stringify(REQ));
+  assert.equal(need.status, 3);
+  assert.equal(JSON.parse(need.stdout).answers.a.escalate, true);
+  assert.equal(run(["decide", "-", "--deadline-ms", "soon"], JSON.stringify(REQ)).status, 2);
+  // The deadline covers starting the daemon; past it every question escalates (exit 0, or 3 when an answer is required)
+  const t0 = Date.now();
+  const lateRun = run(["decide", "-", "--deadline-ms", "50", "--require-answer"], JSON.stringify(REQ));
+  assert.equal(lateRun.status, 3);
+  assert.equal(JSON.parse(lateRun.stdout).answers.a.escalate, true);
+  assert.ok(Date.now() - t0 < 3000);
+  assert.equal(run(["decide", "-", "--deadline-ms", "50"], JSON.stringify({ state: "x", questions: [] })).status, 1);
+});
+
+// A fake warm Claude: reports its model at start, counts each decision it is asked for, answers a confident yes
+const WARM_CLAUDE = (after = `echo '{"type":"result","is_error":false,"result":"{\\"a\\":{\\"p_yes\\":0.99,\\"abstain\\":false,\\"evidence\\":\\"\\",\\"missing\\":\\"\\"}}","modelUsage":{"fake-model-1":{"inputTokens":1,"outputTokens":1}}}'`) =>
+  `echo '{"type":"system","subtype":"init","model":"fake-model-1"}'\nread line\necho d >> "$HOME/decided"\n${after}`;
+async function daemonWith(t, claude, env = {}, home = mkdtempSync(join(tmpdir(), "cev-test-"))) {
+  mkdirSync(join(home, "bin"), { recursive: true });
+  writeFileSync(join(home, "bin", "claude"), `#!/bin/sh\n${claude}\n`);
+  chmodSync(join(home, "bin", "claude"), 0o755);
+  const port = 20000 + Math.floor(Math.random() * 20000);
+  const d = spawn(NODE, [join(ROOT, "core/daemon.mjs")], { env: { HOME: home, PATH: `${join(home, "bin")}:/bin:/usr/bin`, CEV_PORT: String(port), CEV_POOL: "1", ...env }, stdio: ["ignore", "ignore", "pipe"] });
+  t.after(() => d.kill());
+  const B = `http://127.0.0.1:${port}`;
+  const health = () => fetch(`${B}/health`).then((r) => r.json()).catch(() => null);
+  for (let i = 0; i < 80 && (await health())?.model !== "fake-model-1"; i++) await new Promise((r) => setTimeout(r, 100));
+  const decide = (state, headers = {}) => fetch(`${B}/decide`, { method: "POST", headers, body: JSON.stringify({ ...REQ, state }) }).then((r) => r.json());
+  const decided = () => (existsSync(join(home, "decided")) ? readFileSync(join(home, "decided"), "utf8").split("\n").filter(Boolean).length : 0);
+  return { home, d, health, decide, decided };
+}
+
+test("daemon: an identical request is replayed, concurrent ones share one call, and the store survives a restart", async (t) => {
+  const a = await daemonWith(t, WARM_CLAUDE());
+  assert.equal((await a.health()).model, "fake-model-1");
+  const first = await a.decide("x");
+  assert.deepEqual([first.answers.a.answer, first.answers.a.escalate, first.meta.replay], [true, false, undefined]);
+  const again = await a.decide("x");
+  assert.deepEqual([again.answers.a.answer, !!again.meta.replay, a.decided()], [true, true, 1]);
+  assert.equal((await a.decide("y")).meta.replay, undefined);
+  assert.equal(a.decided(), 2);
+  const pair = await Promise.all([a.decide("z"), a.decide("z")]);
+  assert.equal(a.decided(), 3, "two identical requests at once made one model call");
+  assert.deepEqual(pair.map((r) => r.answers.a.answer), [true, true]);
+  assert.equal((await a.health()).replayed, 1);
+  a.d.kill();
+  await new Promise((r) => a.d.on("exit", r));
+  const b = await daemonWith(t, WARM_CLAUDE(), {}, a.home);
+  assert.equal(!!(await b.decide("x")).meta.replay, true);
+  assert.equal(b.decided(), 3);
+  const off = await daemonWith(t, WARM_CLAUDE(), { CEV_REPLAY: "0" });
+  await off.decide("x");
+  assert.equal((await off.decide("x")).meta.replay, undefined);
+});
+
+test("daemon: a deadline bounds the queue and the model call, escalates, and a fault is never stored for replay", async (t) => {
+  const a = await daemonWith(t, WARM_CLAUDE("/bin/sleep 30 &\nwait"), { CEV_CONCURRENCY: "1" } /* the launcher leaves a child holding its pipes */);
+  const t0 = Date.now();
+  const r = await a.decide("x", { "x-cev-deadline-ms": "400" });
+  assert.ok(Date.now() - t0 < 3000, "answered near the deadline, with no cold retry");
+  assert.deepEqual([r.answers.a.answer, r.answers.a.escalate], ["abstain", true]);
+  assert.equal((await a.health()).replay, 0);
+  // the single slot is held by a request with no deadline: one with a deadline leaves the queue on time
+  a.decide("held").catch(() => {});
+  await new Promise((res) => setTimeout(res, 200));
+  const t1 = Date.now();
+  const q = await a.decide("queued", { "x-cev-deadline-ms": "300" });
+  assert.ok(Date.now() - t1 < 2000);
+  assert.deepEqual([q.answers.a.escalate, q.meta.error], [true, "deadline passed while queued"]);
+  assert.equal((await a.health()).queued, 0, "the withdrawn request left the queue");
+  // a follower of an identical request already under way keeps its own deadline
+  const t2 = Date.now();
+  const f = await a.decide("held", { "x-cev-deadline-ms": "300" });
+  assert.ok(Date.now() - t2 < 2000);
+  assert.equal(f.answers.a.escalate, true);
 });
 
 // Fake app-server that completes the turn with the given status (or none) after a confident answer

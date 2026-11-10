@@ -12,6 +12,7 @@ Agents make small judgment calls all day: merge or review, retry or stop, which 
 cev takes the call as a typed question, asks a lean Claude that sees only the facts you pass, and returns one of two things: a confident answer, or `escalate: true` with what was missing.
 
 - **0 wrong auto-answers in 300 benchmark cases.** When the facts weren't there, it escalated.
+- **Same input, same result.** A repeated question is replayed from the first answer, in milliseconds.
 - **About 1.5s a decision** through a warm local daemon.
 - **About 1.6k input tokens a decision**, against 38.9k for the same question asked in a full agent session.
 - **No API key and no dependencies.** It runs on the Claude Code login you already have.
@@ -27,7 +28,7 @@ In Claude Code:
 That's all, with nothing to configure. New sessions get:
 
 - **`cev_decide`**, the decision tool.
-- **The command gate.** Before a shell command that is hard to undo (`git push`, `rm -r`, a deploy or publish), cev takes a second look. Clearly safe ones run as usual; the rest ask you first. Turn it off with `CEV_GATE=off`.
+- **The command gate**, which never gets in your way. For a shell command that is hard to undo (a force push, `rm -r`, a deploy or publish) it records what cev thinks in `~/.cev/gate.jsonl` while the command runs as usual. Set `CEV_GATE=enforce` if you want it to ask you before the ones it isn't sure about.
 
 The daemon starts on the first decision and exits when idle.
 
@@ -97,7 +98,7 @@ Each decision runs in a fresh Claude process with no tools, no settings, no memo
 | Opus 5.5 (default) | 240 | **0** | 60 |
 | Sonnet 5.5 | 239 | **1** | 60 |
 
-- Zero in 300 supports "wrong less than about 1% of the time", not proof of zero.
+- This is what was observed on this benchmark with this model, not a measured error rate for your workload.
 - The cases are synthetic and were written by Claude models, then checked against Codex.
 - Asked three times each, 58 of 60 cases gave the same result every time. None gave two different answers.
 
@@ -107,11 +108,11 @@ Methods, the full tables and what didn't work (a cheaper model first, small loca
 
 Use it for bounded calls with fixed options, especially many in a row or with nobody watching: triage, routing, go/no-go checks, rubric scoring.
 
-Don't use it for open-ended work, or as a safety boundary: the gate only looks at command shapes it knows, and it missed 8 of 20 dangerous commands written after its list. In a live conversation, an unsure call is usually better put to the person directly.
+Don't use it for open-ended work, or as a safety boundary: the gate only looks at command shapes it knows, and it missed 8 of 20 dangerous commands written after its list. If a rule depends on today's date, put the date in `state`. In a live conversation, an unsure call is usually better put to the person directly.
 
 ## Also in the box
 
-- **Command line:** `cev decide request.json`, for scripts and scheduled jobs.
+- **Command line:** `cev decide request.json`, for scripts and scheduled jobs. `--require-answer` exits 3 when cev escalated, so a script stops before acting; `--deadline-ms` bounds the whole call.
 - **Codex as a second opinion:** `CEV_CODEX=1`. Both models must agree before anything is auto-answered.
 
 All settings, the HTTP endpoints and uninstalling are in the [reference](docs/reference.md). Changes per release are in the [changelog](CHANGELOG.md).

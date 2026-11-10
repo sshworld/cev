@@ -57,13 +57,69 @@ test("bool: averages p_yes", () => {
   assert.deepEqual([r.answer, r.conf, r.escalate], [false, 0.85, false]);
 });
 
-test("score: one level apart still agrees, and conf counts ±1", () => {
-  const req = { state: "x", questions: [{ id: "a", type: "score", ask: "?", scale: [1, 5], risk: "low" }] };
+test("score: the answer is one exact level, so its own weight must clear the bar and every pick must be that level", () => {
   const p = (m) => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, abstain: 0, ...m });
+  const one = (risk, probs, score = "2") => combine({ state: "x", questions: [{ id: "a", type: "score", ask: "?", scale: [1, 5], risk }] }, [{ a: { score, probs: p(probs), ...T } }]).a;
+  // flat across three levels: used to answer 2 with confidence 1
+  assert.deepEqual([one("high", { 1: 0.33, 2: 0.34, 3: 0.33 }).conf, one("high", { 1: 0.33, 2: 0.34, 3: 0.33 }).escalate], [0.34, true]);
+  assert.equal(one("low", { 1: 0.33, 2: 0.34, 3: 0.33 }).escalate, true);
+  // exactly at the bar passes, just under it does not (the comparison uses the unrounded weight)
+  assert.equal(one("high", { 2: 0.9, 3: 0.1 }).escalate, false);
+  assert.equal(one("high", { 2: 0.899, 3: 0.101 }).escalate, true);
+  // the pick is not the level the weights favour
+  assert.equal(one("low", { 2: 0.2, 3: 0.8 }, "2").escalate, true);
+  // two models one level apart no longer agree
+  const req = { state: "x", questions: [{ id: "a", type: "score", ask: "?", scale: [1, 5], risk: "low" }] };
   const r = combine(req, [{ a: { score: "3", probs: p({ 3: 0.7, 4: 0.3 }), ...T } }, { a: { score: "4", probs: p({ 4: 0.6, 3: 0.4 }), ...T } }]).a;
-  assert.equal(r.answer, 3);
-  assert.equal(r.agree, true);
-  assert.equal(r.conf, 1);
+  assert.deepEqual([r.agree, r.escalate], [false, true]);
+  const same = combine(req, [{ a: { score: "3", probs: p({ 3: 0.7, 4: 0.3 }), ...T } }, { a: { score: "3", probs: p({ 3: 0.9, 2: 0.1 }), ...T } }]).a;
+  assert.deepEqual([same.answer, same.conf, same.escalate], [3, 0.8, false]);
+});
+
+test("replay: the key follows everything that could change the result, and the store survives a restart and a cut-off line", async () => {
+  const { keyOf, openReplay } = await import("../core/replay.mjs");
+  const { mkdtempSync, appendFileSync, readFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const req = (over = {}) => ({ state: { a: 1, b: 2 }, rules: ["r1", "r2"], questions: [{ id: "q", type: "choice", ask: "?", options: ["x", "y"], risk: "medium" }], ...over });
+  const cfg = { model: "m-1", effort: "low" };
+  const k = keyOf(req(), cfg, "2026-11-10");
+  assert.equal(keyOf(req(), cfg, "2026-11-10"), k);
+  assert.equal(keyOf(req(), { model: null }, "2026-11-10"), null, "no key until the model is known");
+  const others = [
+    keyOf(req(), { ...cfg, model: "m-2" }, "2026-11-10"),
+    keyOf(req(), { ...cfg, effort: "high" }, "2026-11-10"),
+    keyOf(req(), cfg, "2026-11-11"),
+    keyOf(req({ state: { b: 2, a: 1 } }), cfg, "2026-11-10"), // a different prompt text is a different question
+    keyOf(req({ rules: ["r2", "r1"] }), cfg, "2026-11-10"),
+    keyOf(req({ questions: [{ id: "q", type: "choice", ask: "?", options: ["y", "x"], risk: "medium" }] }), cfg, "2026-11-10"),
+    keyOf(req({ questions: [{ id: "q", type: "choice", ask: "?", options: ["x", "y"], risk: "high" }] }), cfg, "2026-11-10"),
+  ];
+  assert.equal(new Set([k, ...others]).size, others.length + 1);
+
+  const file = join(mkdtempSync(join(tmpdir(), "cev-replay-")), "replay.jsonl");
+  let day = "2026-11-10";
+  const a = openReplay({ file, day: () => day });
+  a.put(k, { answers: { q: { answer: "x", conf: 0.9, escalate: false } }, votes: {} });
+  a.put(k, { answers: { q: { answer: "y", conf: 0.9, escalate: false } }, votes: {} }); // the first decision stands
+  a.put(null, { answers: {}, votes: {} });
+  appendFileSync(file, '{"key":"cut","day":"2026-11-10","answers":{"q":{"answer":"x","esc'); // a crash mid-write
+  appendFileSync(file, '\n{"key":"bad","day":"2026-11-10","answers":{"q":{"answer":"x"}}}\n'); // no escalate flag: not an answer
+  const b = openReplay({ file, day: () => day });
+  assert.equal(b.get(k, req()).answers.q.answer, "x");
+  assert.equal(b.get("cut", req()), null);
+  assert.equal(b.get("bad", req()), null);
+  // a line someone wrote into the file can't authorize what the live path would not: an answer outside the options,
+  // an auto-answer under the bar, a missing question
+  const forged = (answers) => (appendFileSync(file, JSON.stringify({ key: "f" + Math.random(), day, answers }) + "\n"), JSON.parse(readFileSync(file, "utf8").trim().split("\n").pop()).key);
+  for (const answers of [{ q: { answer: "NOT_AN_OPTION", conf: 1, escalate: false } }, { q: { answer: "x", conf: 0.5, escalate: false } }, { q: { answer: "abstain", conf: 0, escalate: false } }, {}, { q: { answer: "x", conf: 0.9, escalate: false }, extra: { answer: "x", conf: 1, escalate: false } }]) {
+    const key = forged(answers);
+    assert.equal(openReplay({ file, day: () => day }).get(key, req()), null, JSON.stringify(answers));
+  }
+  day = "2026-11-11";
+  assert.equal(b.get(k, req()), null, "yesterday's answer is not replayed");
+  assert.equal(openReplay({ file, day: () => day }).size(), 0);
+  assert.equal(readFileSync(file, "utf8"), "", "entries from other days are dropped from the file");
 });
 
 test("score: two levels apart disagrees", () => {

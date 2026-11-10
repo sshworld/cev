@@ -66,16 +66,29 @@ test("hook: shadow mode logs and never interferes; enforce asks the user when ce
   assert.equal(hook(bash("git push --force origin main"), { CEV_GATE: "off" }).log.length, 0);
 });
 
-test("plugin: the hook it registers enforces without any setting, CEV_GATE still overrides, and the manifest carries the release version", async () => {
-  const run = (env) => spawnSync(process.execPath, [join(ROOT, "cli/gate.mjs"), "--default", "enforce"], { input: JSON.stringify(bash("git push --force origin main")), env: { HOME: mkdtempSync(join(tmpdir(), "cev-gate-")), PATH: "/nonexistent", CEV_PORT: "1", ...env }, encoding: "utf8", timeout: 20_000 });
-  assert.equal(JSON.parse(run({}).stdout).hookSpecificOutput.permissionDecision, "ask");
+test("plugin: the hook it registers never interrupts unless CEV_GATE=enforce, and the manifest carries the release version", async () => {
+  const run = (env) => spawnSync(process.execPath, [join(ROOT, "cli/gate.mjs")], { input: JSON.stringify(bash("git push --force origin main")), env: { HOME: mkdtempSync(join(tmpdir(), "cev-gate-")), PATH: "/nonexistent", CEV_PORT: "1", ...env }, encoding: "utf8", timeout: 20_000 });
+  assert.deepEqual([run({}).status, run({}).stdout], [0, ""]);
   assert.deepEqual([run({ CEV_GATE: "off" }).status, run({ CEV_GATE: "off" }).stdout], [0, ""]);
-  assert.deepEqual([run({ CEV_GATE: "shadow" }).status, run({ CEV_GATE: "shadow" }).stdout], [0, ""]);
+  assert.equal(JSON.parse(run({ CEV_GATE: "enforce" }).stdout).hookSpecificOutput.permissionDecision, "ask");
   const manifest = JSON.parse(readFileSync(join(ROOT, ".claude-plugin/plugin.json"), "utf8"));
   const hooks = JSON.parse(readFileSync(join(ROOT, "hooks/hooks.json"), "utf8"));
   assert.equal(manifest.version, (await import("../core/tool.mjs")).VERSION);
   assert.equal(manifest.version, JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version);
-  assert.match(hooks.hooks.PreToolUse[0].hooks[0].command, /gate\.mjs" --default enforce$/);
+  assert.match(hooks.hooks.PreToolUse[0].hooks[0].command, /gate\.mjs"$/);
+});
+
+test("gate: fixed rules ask at once with a plain reason; an ordinary push is left to the model", async () => {
+  const { alwaysAsk, gateRequest, REASONS } = await import("../core/gate.mjs");
+  for (const c of ["git push --force origin main", "git push -f", "git push -uf origin x", "git push origin +HEAD:main", "git push --force-with-lease", "git push origin '+HEAD:main'", "git push origin --delete release/2.3", "git push origin :main", "git push origin ':main'", "git push -vd origin main", "git push --mirror origin", "echo ok\ngit push --force origin main", "git -C ../lib filter-repo --path x", "rm -rf ~", 'rm -rf "$HOME"', "rm -rf /", "psql -c 'DROP TABLE users'", "terraform destroy -auto-approve", "dd if=/dev/zero of=/dev/disk2"]) assert.ok(alwaysAsk(c), c);
+  for (const c of ["git push -q origin HEAD:develop", "git push -u origin fix/typo", "git push --follow-tags origin main", "git push origin main", "git push --force-if-includes origin main", "echo 'git push --force origin main'", "git push origin HEAD:refs/heads/x", "rm -rf node_modules", "rm -rf ~/proj/build", "echo terraform plan", "git status"]) assert.equal(alwaysAsk(c), null, c);
+  assert.deepEqual(gateRequest({ command: "x" }).questions[0].options, ["proceed", ...Object.keys(REASONS)]);
+  // enforce, no CLI and no daemon: the fixed rule still answers, immediately and in words
+  const t0 = Date.now();
+  const r = hook(bash("git push --force origin main"), { CEV_GATE: "enforce" });
+  assert.match(JSON.parse(r.out).hookSpecificOutput.permissionDecisionReason, /force-pushes/);
+  assert.equal(r.log[0].rule, "it force-pushes, which overwrites history on the remote");
+  assert.ok(Date.now() - t0 < 3000);
 });
 
 test("hook: a mistyped mode is treated as enforce, not as shadow", () => {

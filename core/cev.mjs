@@ -90,7 +90,7 @@ const levelsOf = (q) => {
   return Array.from({ length: hi - lo + 1 }, (_, i) => String(lo + i));
 };
 const TEXT = { type: "string" };
-const keysOf = (q) => [...(q.type === "choice" ? q.options : levelsOf(q)), "abstain"];
+export const keysOf = (q) => [...(q.type === "choice" ? q.options : levelsOf(q)), "abstain"];
 const fieldOf = (q) => (q.type === "choice" ? "choice" : "score");
 
 // A vote counts only if it has the exact shape the schema promises. The warm Claude path has no schema enforcement,
@@ -152,7 +152,8 @@ process.on("exit", () => {
   for (const child of RUNNING) killTree(child);
 });
 
-function run(cmd, args, { cwd, env, timeout = 120_000 }) {
+function run(cmd, args, { cwd, env, timeout }) {
+  timeout = timeout > 0 ? timeout : 120_000;
   return new Promise((resolve) => {
     const t0 = performance.now();
     const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"], detached: GROUPS });
@@ -215,7 +216,7 @@ export function prepareCodex() {
   writeFileSync(join(CODEX_HOME, "config.toml"), 'web_search = "disabled"\n');
 }
 
-export async function askClaude(req, { model, effort } = {}) {
+export async function askClaude(req, { model, effort, timeout } = {}) {
   const cfg = claudeConfig();
   model ??= cfg.model;
   effort ??= cfg.effort;
@@ -224,7 +225,7 @@ export async function askClaude(req, { model, effort } = {}) {
     "claude",
     ["-p", promptOf(req), "--model", model, "--tools", "", "--output-format", "json", "--no-session-persistence",
       "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM, "--json-schema", JSON.stringify(schemaOf(req)), ...(effort ? ["--effort", effort] : [])],
-    { cwd: RUN },
+    { cwd: RUN, timeout },
   );
   try {
     const j = JSON.parse(r.out);
@@ -238,7 +239,7 @@ export async function askClaude(req, { model, effort } = {}) {
   }
 }
 
-export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = {}) {
+export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low", timeout } = {}) {
   prepareCodex();
   const schemaFile = join(RUN, `schema-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
   writeFileSync(schemaFile, JSON.stringify(schemaOf(req)));
@@ -249,7 +250,7 @@ export async function askCodex(req, { model = "gpt-6.1-sol", effort = "low" } = 
       ["exec", "--json", "--ephemeral", "--skip-git-repo-check", "-s", "read-only", "-m", model,
         "-c", `model_instructions_file="${join(HOME, "system.md")}"`, "-c", `model_reasoning_effort="${effort}"`,
         ...CODEX_OFF.flatMap((k) => ["-c", `${k}=false`]), "--output-schema", schemaFile, promptOf(req)],
-      { cwd: RUN, env: { CODEX_HOME } },
+      { cwd: RUN, env: { CODEX_HOME }, timeout },
     );
   } finally {
     rmSync(schemaFile, { force: true });
@@ -328,11 +329,10 @@ export function combine(req, votes) {
         conf = 0;
         agree = false;
       } else if (q.type === "score") {
-        // Scores within one level of each other count as agreement
-        const nums = vs.map((v) => Number(v[field]));
-        // ...and each pick must sit within one level of the averaged answer, so probs can't outvote every pick
-        agree = nums.every((n) => Number.isFinite(n) && Math.abs(n - Number(answer)) <= 1) && Math.max(...nums) - Math.min(...nums) <= 1;
-        conf = [-1, 0, 1].reduce((a, d) => a + (dist[String(Number(answer) + d)] ?? 0), 0);
+        // The answer is one exact level, so every model must have picked that level and the confidence is the weight
+        // on that level alone. Counting the neighbours' weight let a flat 0.33/0.34/0.33 answer with confidence 1.
+        agree = vs.every((v) => Number(v[field]) === Number(answer));
+        conf = dist[answer];
         answer = Number(answer);
       } else {
         // Agreement means every model picked the answer itself: probs that contradict the picks never authorize it

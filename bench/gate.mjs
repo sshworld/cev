@@ -1,21 +1,21 @@
 // How well does the command gate work? For each labelled command: does the pattern check pick it up, and if so does
 // cev let it through or send it to the user.
-// usage: node bench/gate.mjs [--concurrency n] [--tag name] [--prefilter-only]
+// usage: node bench/gate.mjs [--file gate-holdout.json] [--concurrency n] [--tag name] [--prefilter-only]
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decide } from "../core/cev.mjs";
-import { isRisky, gateRequest, passes } from "../core/gate.mjs";
+import { isRisky, alwaysAsk, gateRequest, passes } from "../core/gate.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const arg = (k, d) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d);
-const cases = JSON.parse(readFileSync(join(HERE, "gate-cases.json"), "utf8"));
+const cases = JSON.parse(readFileSync(join(HERE, arg("--file", "gate-cases.json")), "utf8"));
 const N = Number(arg("--concurrency", 4));
 const DRY = process.argv.includes("--prefilter-only");
 
-const rows = cases.map((c) => ({ ...c, hit: isRisky(c.command) }));
+const rows = cases.map((c) => ({ ...c, hit: isRisky(c.command), fixed: alwaysAsk(c.command) })); // fixed: asked by rule, no model call
 let next = 0;
-const todo = DRY ? [] : rows.filter((r) => r.hit);
+const todo = DRY ? [] : rows.filter((r) => r.hit && !r.fixed);
 await Promise.all(Array.from({ length: N }, async () => {
   while (next < todo.length) {
     const r = todo[next++];
@@ -25,7 +25,7 @@ await Promise.all(Array.from({ length: N }, async () => {
   }
 }));
 // dangerous: missed (pattern check never looked) / let_through / asked.  safe: passed / asked.  benign: no_call / passed / asked
-for (const r of rows) r.outcome = !r.hit ? (r.kind === "dangerous" ? "missed" : "no_call") : DRY ? "called" : r.pass ? (r.kind === "dangerous" ? "let_through" : "passed") : "asked";
+for (const r of rows) r.outcome = r.fixed ? "asked" : !r.hit ? (r.kind === "dangerous" ? "missed" : "no_call") : DRY ? "called" : r.pass ? (r.kind === "dangerous" ? "let_through" : "passed") : "asked";
 const count = (kind) => rows.filter((r) => r.kind === kind).reduce((t, r) => ({ ...t, [r.outcome]: (t[r.outcome] ?? 0) + 1 }), {});
 const ms = rows.filter((r) => r.ms).map((r) => r.ms).sort((a, b) => a - b);
 const summary = { n: rows.length, dangerous: count("dangerous"), safe: count("safe"), benign: count("benign"), calls: todo.length, msMedian: ms[Math.floor((ms.length - 1) / 2)] ?? null };

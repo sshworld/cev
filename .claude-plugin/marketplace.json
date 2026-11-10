@@ -8,7 +8,7 @@
     {
       "name": "cev",
       "source": "./",
-      "description": "The cev_decide tool, plus a command gate hook that asks you before shell commands that are hard to undo."
+      "description": "The cev_decide tool, plus a command gate hook that records a second opinion on shell commands that are hard to undo, without ever interrupting unless you turn that on."
     }
   ]
 }

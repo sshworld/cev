@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.3.0 — 2026-11-10
+
+This release came out of a three-round design review with Codex. The agreed items are in; what was contested is listed at the end.
+
+### Fixed
+
+- **A score could be auto-answered with no real confidence.** Confidence for a `score` was the probability within one level of the answer, so a flat 0.33/0.34/0.33 answered "2" with confidence 1. Now the answered level's own probability must clear the bar and every model must have picked that exact level. Expect more escalations on score questions.
+
+### Changed
+
+- **The command gate no longer interrupts by default.** 1.2.1 installed it asking, which put a confirmation in front of commands that used to just run and got in the way of automation. It now records only; `CEV_GATE=enforce` makes it ask.
+- **A push without force is no longer a reason to ask.** It can be reverted. Force pushes, remote deletions and history rewrites are.
+- **In `enforce`, the gate says why it asks**, in words, and the clearest cases (force push, remote delete, `rm -rf ~`, `DROP TABLE`, `terraform destroy`, writing to a disk device) are asked by fixed rule with no model call.
+- The pattern list gained the shapes the holdout set showed it missed (helm, unpublish, shutdown, compose down, dropDatabase). That set therefore no longer measures unseen commands.
+
+### Added
+
+- **Replay.** An identical request gets the stored result, in milliseconds, and concurrent identical requests share one model call. The key covers the prompt, risk levels, cev version, resolved model, effort and the calendar day; faults are never stored. `CEV_REPLAY=0` turns it off. See [docs/reference.md](docs/reference.md#replay).
+- **`cev decide --require-answer`** exits 3 when any question escalated, and **`--deadline-ms`** bounds the whole call (daemon start, queue, model). Past the deadline the questions escalate; a cold retry is made only when enough time is left for one.
+- `/health` reports the resolved model and the replay store size.
+- A warm Claude process now runs in its own process group, and a timeout settles the call itself: a child the CLI left behind can no longer hold a decision slot open (not on Windows).
+
+### Measured
+
+- Gate, 60 labelled commands with the new rules: 30 of 30 dangerous ones asked, 11 of 14 harmless ones passed, 16 benign ones never sent to a model.
+
+### Contested in review, not done
+
+- **Asking about every `git push`** (Codex): not done. It is what made the gate a nuisance.
+- **Logging every shell command to measure what the gate misses** (Codex): not done. It would keep a record of everything the agent runs.
+- **A human-labelled holdout benchmark** (Codex, and it is right that the cases were written by the model family being tested): not done yet; it needs the owner's time.
+
+### Not verified
+
+- How many more score questions escalate on the 300-case benchmark: the stored results don't keep per-level probabilities, and the benchmark was not re-run.
+- Replay across a model alias change: the key holds the resolved model and the pool forgets it when it is respawned (every 6 hours), but no test moves an alias. While only replay hits arrive, a moved alias is noticed at the next respawn or the next day, not at once.
+
 ## 1.2.1 — 2026-11-10
 
 ### Changed

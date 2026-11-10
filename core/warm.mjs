@@ -16,13 +16,13 @@ const LIVE = new Set();
 const EXIT_GRACE_MS = 5_000;
 
 class ClaudeProc {
-  constructor({ model, effort }) {
+  constructor({ model, effort, onModel }) {
     const { mcp } = prepare();
     this.child = spawn(
       "claude",
       ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--model", model, "--tools", "", "--no-session-persistence",
         "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM, ...(effort ? ["--effort", effort] : [])],
-      { cwd: RUN, stdio: ["pipe", "pipe", "pipe"] },
+      { cwd: RUN, stdio: ["pipe", "pipe", "pipe"], detached: GROUPS },
     );
     this.dead = false;
     LIVE.add(this);
@@ -38,22 +38,34 @@ class ClaudeProc {
       } catch {
         return;
       }
+      // The CLI names the model an alias resolved to as soon as it starts: replay keys on it, so a moved alias misses
+      if (ev.type === "system" && ev.subtype === "init" && typeof ev.model === "string") (this.model = ev.model), onModel?.(ev.model);
       if (ev.type === "result") this.waiters.shift()?.(ev);
     });
     // "error" covers a CLI that failed to start (ENOENT); unhandled, it would crash the daemon
-    const exited = () => {
+    this.exited = () => {
+      if (this.dead) return;
       this.dead = true;
       LIVE.delete(this);
       this.waiters.splice(0).forEach((w) => w(null));
     };
-    this.child.on("error", exited);
-    this.child.on("close", exited);
+    this.child.on("error", this.exited);
+    this.child.on("close", this.exited);
+  }
+  // The whole process group, so nothing the CLI started outlives it holding the pipes open (not on Windows)
+  killTree() {
+    try {
+      if (GROUPS && this.child.pid) process.kill(-this.child.pid, "SIGKILL");
+      else this.child.kill("SIGKILL");
+    } catch {
+      this.child.kill("SIGKILL");
+    }
   }
   // The answer is taken from the result event (its is_error is the CLI's own success signal) without waiting
   // ~0.8s for the exit; the process is then told to finish and killed if it doesn't.
   finish() {
     this.child.stdin.end();
-    setTimeout(() => !this.dead && this.child.kill("SIGKILL"), EXIT_GRACE_MS).unref();
+    setTimeout(() => !this.dead && this.killTree(), EXIT_GRACE_MS).unref();
   }
   ask(req, { timeout }) {
     // --json-schema is per process, so in warm mode the schema rides in the prompt and the answer is validated here
@@ -61,7 +73,8 @@ class ClaudeProc {
     return new Promise((resolve) => {
       const t0 = performance.now();
       if (this.dead) return resolve({ ok: false, error: "claude exited before use", ms: 0, tokensIn: 0, tokensOut: 0 });
-      const timer = setTimeout(() => this.child.kill("SIGKILL"), timeout);
+      // On timeout the call is settled here: waiting for "close" would hang if a surviving child kept the pipes open
+      const timer = setTimeout(() => (this.killTree(), this.exited()), timeout);
       this.waiters.push((ev) => {
         clearTimeout(timer);
         const ms = Math.round(performance.now() - t0);
@@ -72,7 +85,7 @@ class ClaudeProc {
         try {
           const answer = JSON.parse(String(ev.result).replace(/^```(?:json)?\s*|\s*```$/g, ""));
           const ok = !ev.is_error && validate(req, answer);
-          resolve({ ok, answer, ms, tokensIn, tokensOut: u.outputTokens ?? 0, ...(!ok && { error: "invalid answer shape" }) });
+          resolve({ ok, answer, ms, tokensIn, tokensOut: u.outputTokens ?? 0, model: Object.keys(ev.modelUsage ?? {})[0] ?? this.model, ...(!ok && { error: "invalid answer shape" }) });
         } catch (e) {
           resolve({ ok: false, error: String(ev.result).slice(0, 300), ms, tokensIn, tokensOut: u.outputTokens ?? 0 });
         }
@@ -81,9 +94,16 @@ class ClaudeProc {
     });
   }
   kill() {
-    this.child.kill();
+    this.killTree();
+    this.exited();
   }
 }
+
+const GROUPS = process.platform !== "win32";
+// Warm processes have their own process groups, so they don't die with this one by themselves: whatever way it
+// exits (a crash included), take them along.
+process.on("exit", () => LIVE.forEach((p) => p.killTree()));
+const COLD_BUDGET_MS = 8000; // a cold call takes about 3s, sometimes much more: below this a retry would only overrun
 
 // The schema can't be enforced on this path, so check every answer by hand (combine checks again per vote)
 // An answer with a field no question asked for is malformed as a whole, even if the votes in it look fine
@@ -234,8 +254,12 @@ class CodexServer {
 // ── Warm decider ──
 // sleep() tears the pool down to free memory; the next decision brings it back.
 // Codex is started only when it is enabled or first asked, so a Claude-only setup never pays for an app-server.
-export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort = claudeConfig().effort, codexModel = "gpt-6.1-sol", effort = "low", serviceTier, pool = 2, timeout = 90_000, fallback = true, codex: useCodex = codexEnabled() } = {}) {
+export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort = claudeConfig().effort, codexModel = "gpt-6.1-sol", effort = "low", serviceTier, pool = 2, timeout: defaultTimeout = 90_000, fallback = true, codex: useCodex = codexEnabled() } = {}) {
   let claudes = [];
+  // The model id the newest Claude process reported. Every process is started with the same alias, so the latest
+  // report is what the alias resolves to now; a moved alias shows up with the next process that starts.
+  let known = null;
+  const onModel = (id) => (known = id);
   let codex = null;
   let awake = false;
   const newCodex = () => {
@@ -244,7 +268,7 @@ export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort =
   };
   const fill = () => {
     claudes = claudes.filter((p) => !p.dead);
-    while (claudes.length < pool) claudes.push(new ClaudeProc({ model: claudeModel, effort: claudeEffort }));
+    while (claudes.length < pool) claudes.push(new ClaudeProc({ model: claudeModel, effort: claudeEffort, onModel }));
   };
   const wake = () => {
     if (awake) return;
@@ -254,42 +278,52 @@ export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort =
   };
   wake();
 
-  async function ask(m, req) {
+  // deadlineAt (a performance.now() value) bounds this one decision: the warm call gets what is left of it, and a
+  // cold retry is made only when enough is left for one (COLD_BUDGET_MS), otherwise the failure stands and escalates.
+  async function ask(m, req, deadlineAt) {
     wake();
+    const left = () => (deadlineAt === undefined ? Infinity : deadlineAt - performance.now());
+    if (left() <= 0) return { ok: false, error: "deadline passed", ms: 0, tokensIn: 0, tokensOut: 0, via: "none" };
+    const timeout = Math.min(defaultTimeout, left());
     let r;
     if (m === "codex") {
       if (!codex || codex.dead) newCodex();
       r = await codex.ask(req, { timeout });
     } else {
       claudes = claudes.filter((p) => !p.dead);
-      const proc = claudes.shift() ?? new ClaudeProc({ model: claudeModel, effort: claudeEffort });
+      const proc = claudes.shift() ?? new ClaudeProc({ model: claudeModel, effort: claudeEffort, onModel });
       fill();
-      r = await proc.ask(req, { timeout });
+      r = left() <= 0 ? { ok: false, error: "deadline passed", ms: 0, tokensIn: 0, tokensOut: 0 } : await proc.ask(req, { timeout: Math.min(defaultTimeout, left()) });
+      if (!r.ok && !proc.dead) proc.kill();
     }
-    if (r.ok || !fallback) return { ...r, via: "warm" };
-    const c = m === "codex" ? await askCodex(req, { model: codexModel, effort }) : await askClaude(req, { model: claudeModel, effort: claudeEffort });
+    if (r.ok || !fallback || left() < COLD_BUDGET_MS) return { ...r, via: "warm" };
+    const cold = { timeout: Math.min(120_000, left()) };
+    const c = m === "codex" ? await askCodex(req, { model: codexModel, effort, ...cold }) : await askClaude(req, { model: claudeModel, effort: claudeEffort, ...cold });
     return { ...c, via: "cold", warmError: r.error };
   }
 
   return {
-    async decide(req, { models = useCodex ? ["claude", "codex"] : ["claude"] } = {}) {
+    async decide(req, { models = useCodex ? ["claude", "codex"] : ["claude"], deadlineAt } = {}) {
       const t0 = performance.now();
-      const calls = await Promise.all(models.map((m) => ask(m, req)));
+      const calls = await Promise.all(models.map((m) => ask(m, req, deadlineAt)));
       const byModel = Object.fromEntries(models.map((m, i) => [m, calls[i]]));
       return {
         answers: combine(req, calls.map((c) => (c.ok ? c.answer : null))),
         votes: Object.fromEntries(Object.entries(byModel).map(([m, c]) => [m, c.ok ? c.answer : null])),
         meta: {
           ms: Math.round(performance.now() - t0),
-          models: Object.fromEntries(Object.entries(byModel).map(([m, c]) => [m, { ok: c.ok, ms: c.ms, via: c.via, tokensIn: c.tokensIn, tokensOut: c.tokensOut, ...(c.error && { error: c.error }), ...(c.warmError && { warmError: c.warmError }) }])),
+          models: Object.fromEntries(Object.entries(byModel).map(([m, c]) => [m, { ok: c.ok, ms: c.ms, via: c.via, tokensIn: c.tokensIn, tokensOut: c.tokensOut, ...(c.model && { model: c.model }), ...(c.error && { error: c.error }), ...(c.warmError && { warmError: c.warmError }) }])),
         },
       };
     },
+    // The model warm Claude answers with, once a process has reported it
+    identity: () => known,
     codexTier: () => codex?.tier,
     awake: () => awake,
     sleep() {
       if (!awake) return;
       awake = false;
+      known = null; // the next pool may resolve the alias to another model: learn it again before replaying
       claudes.splice(0);
       LIVE.forEach((p) => p.kill()); // pooled and in-use alike
       codex?.kill();

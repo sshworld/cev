@@ -28,7 +28,7 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
 | `core/client.mjs` | finding, replacing and starting the daemon; shared by the bridge, the CLI and the gate |
 | `core/gate.mjs` | command gate: the risky-shape patterns, the gate request and its pass rule |
 | `cli/cev.mjs` | CLI: starts the daemon if needed, cold fallback when it can't |
-| `.claude-plugin/`, `hooks/hooks.json` | Claude Code plugin: manifest with the MCP bridge, marketplace entry, and the gate hook registered with `--default enforce`. `plugin.json` version must match `core/tool.mjs` |
+| `.claude-plugin/`, `hooks/hooks.json` | Claude Code plugin: manifest with the MCP bridge, marketplace entry, and the gate hook registered with no mode, so it records only. `plugin.json` version must match `core/tool.mjs` |
 | `docs/` | `reference.md` (request format, settings, how it runs, gate, uninstall) and `benchmarks.md`. The README stays short: detail goes here |
 | `cli/gate.mjs` | Claude Code `PreToolUse` hook for the command gate (shadow by default; only ever returns "ask") |
 | `bench/` | cases, runners, analysis, report generator, recorded results |
@@ -42,7 +42,7 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
   - `validVote` is the one shape check, used by the warm path and again by `combine` for every vote. Keep it in step with `schemaOf`. A vote it rejects is dropped, so it escalates. Never let a malformed vote fall through to averaging.
 - **Escalation fails closed.** `combine` escalates on any of these:
   - an abstain (a vote whose `choice`/`score` is `abstain`, whatever its probs say)
-  - disagreement: picks differ, a pick isn't the averaged answer (choice), or scores sit more than one level apart or from the answer. Probabilities that contradict every pick must never authorize an answer.
+  - disagreement: picks differ, a pick isn't the averaged answer (choice), or a score pick isn't the exact answered level. Probabilities that contradict every pick must never authorize an answer.
   - a missing vote
   - `conf` below `THRESHOLD[risk]`
 
