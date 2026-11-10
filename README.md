@@ -115,11 +115,28 @@ There is nothing else to install. There is no background service to register: th
 
 Tested on macOS with Node 20 and 26. It should work on Linux. Windows is untested: the CLIs are spawned without a shell, so npm `.cmd` shims may not be found.
 
-### Add to Claude Code
+### Add to Claude Code: as a plugin
+
+No clone needed. In Claude Code (2.1.275 or later):
+
+```
+/plugin install cev --marketplace sshworld/cev
+```
+
+On an older Claude Code, add the marketplace first: `/plugin marketplace add sshworld/cev`, then `/plugin install cev@cev`.
+
+This registers two things:
+
+- the `cev_decide` tool (the MCP bridge), ready in new sessions;
+- the [command gate](#command-gate-experimental) hook, **switched off**. It does nothing and calls no model until you set `CEV_GATE=shadow` or `CEV_GATE=enforce`, for example under `"env"` in `~/.claude/settings.json`.
+
+### Add to Claude Code: from a clone
 
 ```sh
 claude mcp add --scope user cev -- node /absolute/path/to/cev/cli/mcp.mjs
 ```
+
+Use one of the two, not both: with both you get the tool twice.
 
 ### Add to Codex
 
@@ -136,6 +153,19 @@ Put this in the plugin's `.mcp.json`:
 ```
 
 New sessions then see a single tool, `cev_decide`.
+
+### Uninstall
+
+```sh
+claude plugin uninstall cev            # if installed as a plugin
+claude mcp remove cev -s user          # if added with `claude mcp add`
+codex mcp remove cev                   # if added to Codex
+curl -X POST http://127.0.0.1:7767/retire   # stop a running daemon now (it also exits by itself after 30 idle minutes)
+npm unlink -g cev                      # if you ran `npm link`
+rm -rf ~/.cev                          # the request log and the daemon's working files
+```
+
+`~/.cev/log.jsonl` holds every request cev was sent. Delete it only if you don't want that history.
 
 ## How it runs
 
@@ -175,6 +205,8 @@ The daemon also serves `POST /decide` (plain JSON), `GET /health`, `POST /retire
 ### Command gate (experimental)
 
 `cli/gate.mjs` is a Claude Code `PreToolUse` hook. For a shell command whose shape can be hard to undo (`git push`, `rm -r`, `kubectl delete`, a publish or deploy and so on) it asks cev whether the command should run without the user confirming. Other commands pass without a model call.
+
+The plugin registers it for you, switched off: set `CEV_GATE` to turn it on. Without the plugin, register it yourself (it then defaults to `shadow`):
 
 ```json
 { "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/cev/cli/gate.mjs" }] }] } }

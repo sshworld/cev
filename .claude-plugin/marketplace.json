@@ -1,0 +1,14 @@
+{
+  "name": "cev",
+  "description": "cev: typed, bounded decisions for coding agents, answered or escalated.",
+  "owner": {
+    "name": "sshworld"
+  },
+  "plugins": [
+    {
+      "name": "cev",
+      "source": "./",
+      "description": "The cev_decide tool, plus an experimental command gate hook that stays off until you set CEV_GATE."
+    }
+  ]
+}

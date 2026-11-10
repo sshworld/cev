@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 — 2026-11-10
+
+### Added
+
+- **cev is a Claude Code plugin.** `/plugin install cev --marketplace sshworld/cev` registers the `cev_decide` tool and the command gate hook in one step, with no clone. The hook is installed switched off: it calls no model until `CEV_GATE` is set to `shadow` or `enforce`.
+- **An uninstall section** in the README.
+
+### Not verified
+
+- Installing from the marketplace on a machine other than the author's.
+
 ## 1.1.0 — 2026-11-10
 
 This release is mostly measurement. The question was whether cev could be made faster or cheaper by changing the model, and the answer on 300 cases is that Opus should stay the default.

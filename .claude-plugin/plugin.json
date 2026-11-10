@@ -1,0 +1,19 @@
+{
+  "name": "cev",
+  "version": "1.2.0",
+  "description": "Typed, bounded decisions for agents: cev answers a fixed-option question from the state you pass, or escalates to a human when it would have to guess.",
+  "author": {
+    "name": "sshworld"
+  },
+  "homepage": "https://github.com/sshworld/cev",
+  "repository": "https://github.com/sshworld/cev",
+  "license": "MIT",
+  "mcpServers": {
+    "cev": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/cli/mcp.mjs"
+      ]
+    }
+  }
+}
