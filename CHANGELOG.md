@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.1.0 — 2026-11-10
+
+This release is mostly measurement. The question was whether cev could be made faster or cheaper by changing the model, and the answer on 300 cases is that Opus should stay the default.
+
+### Added
+
+- **`CEV_CLAUDE_MODEL` and `CEV_CLAUDE_EFFORT`** choose which Claude answers and how hard it thinks. A mistyped effort, or a model value that isn't shaped like a model name, stops the daemon at start-up; a name that doesn't exist fails the decision, which escalates.
+- **The CLI and the gate start the daemon** when it isn't running, as the MCP bridge already did, so scripted callers get the warm pool (about 1.5s a decision, not 3s). When no daemon can be started they still decide cold.
+- **Command gate (experimental):** `cli/gate.mjs`, a Claude Code `PreToolUse` hook that asks cev about shell commands that can be hard to undo. It records only by default (`CEV_GATE=shadow`) and at most asks the user to confirm (`enforce`). It is not a safety boundary: its pattern list missed 8 of 20 unseen dangerous commands.
+- **240 new benchmark cases** in four areas (`bench/cases-x-*.json`), and three benchmark scripts: `bench/models.mjs` (one model per arm, plus a simulated cheap-first cascade), `bench/stability.mjs` (repeatability) and `bench/local.mjs` (a local model read through first-token probabilities).
+
+### Fixed
+
+- A cold CLI call now runs in its own process group, so a timeout also ends anything the CLI started (not on Windows).
+- A warm answer carrying a field no question asked for is rejected as malformed.
+
+### Measured
+
+- Opus 5.5: 0 wrong auto-answers in 300 cases. Sonnet 5.5: 1 in 300. Haiku 5.5: 1 in 60.
+- Model choice does not change latency: about 3s cold for every model, 1.4–1.7s warm. About 0.8s passes before the first token.
+- Asking a cheap model first and a strong one only on escalation kept the cheap model's wrong answer, because it was confident.
+- Small local models (Qwen2.5 1.5B, Phi-4-mini) gave wrong auto-answers even at a 0.999 confidence bar.
+- 58 of 60 cases gave the same result in three runs; none gave two different auto-answers.
+
+### Not done, and why
+
+- **A cheap-first cascade** and **a local fast tier**: both leave wrong auto-answers (see above).
+- **Trimming the answer to save time:** dropping `why` saves about 0.1s of 1.5s.
+- **A gate that judges every command not known to be harmless:** on 9,108 real agent shell calls it sent 82% to a model.
+
+### Not verified
+
+- Windows, as before.
+- The gate against real sessions: its 0.75 bar was fitted on 44 labelled commands.
+- llama.cpp ran on CPU only (its Metal backend failed to start on the test Mac), so local-model latency with a GPU is unknown.
+
 ## 1.0.0 — 2026-11-06
 
 cev 1.0 is about one promise: **it never auto-answers unless the answer is well-formed, confident enough for its risk, and (with a second opinion) agreed.** Four rounds of adversarial review turned up a dozen ways that promise could be broken quietly. Every one of them is now closed and covered by a test.

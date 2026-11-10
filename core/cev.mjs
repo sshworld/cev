@@ -29,6 +29,17 @@ Read STATE and RULES, then answer every QUESTION using only them.
 // confident error lean Claude made, and it roughly doubles latency (warm: Claude ~1.5s, both ~2–4s).
 export const codexEnabled = () => process.env.CEV_CODEX === "1";
 
+// Which Claude answers, and how hard it thinks. An alias ("opus") follows the newest model of that tier; a full id
+// pins one. Unset effort leaves the CLI's default. A bad value throws: a typo must not silently pick another model.
+export const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
+export function claudeConfig(env = process.env) {
+  const model = env.CEV_CLAUDE_MODEL || "opus";
+  const effort = env.CEV_CLAUDE_EFFORT || undefined;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._[\]-]{0,63}$/.test(model)) throw new Error(`CEV_CLAUDE_MODEL is not a model name: ${JSON.stringify(model)}`);
+  if (effort !== undefined && !EFFORTS.includes(effort)) throw new Error(`CEV_CLAUDE_EFFORT must be one of ${EFFORTS.join(", ")}`);
+  return { model, effort };
+}
+
 // When enabled, keep the routing the panel benchmarks measured: Claude alone only when every question is low-risk
 // and none is a score (scores split the two models most often). Unset risk means medium, so it gets both.
 export function route(req, { codex = codexEnabled() } = {}) {
@@ -124,17 +135,36 @@ export function promptOf(req) {
 }
 
 // ── Runners: launch each CLI as a bare decision function, with as little context as possible ──
+// CLI processes started for cold decisions. A caller that exits early (a hook past its deadline, a signal) must not
+// leave one running with nobody left to time it out, so they are killed when this process exits.
+const RUNNING = new Set();
+// Each CLI runs in its own process group (not on Windows), so a launcher's children die with it instead of living on
+const GROUPS = process.platform !== "win32";
+const killTree = (child) => {
+  try {
+    if (GROUPS && child.pid) process.kill(-child.pid, "SIGKILL");
+    else child.kill("SIGKILL");
+  } catch {
+    child.kill("SIGKILL");
+  }
+};
+process.on("exit", () => {
+  for (const child of RUNNING) killTree(child);
+});
+
 function run(cmd, args, { cwd, env, timeout = 120_000 }) {
   return new Promise((resolve) => {
     const t0 = performance.now();
-    const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"], detached: GROUPS });
+    RUNNING.add(child);
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (err += d));
-    const timer = setTimeout(() => child.kill("SIGKILL"), timeout);
+    const timer = setTimeout(() => killTree(child), timeout);
     const settle = (code) => {
       clearTimeout(timer);
+      RUNNING.delete(child);
       resolve({ code, out, err, ms: Math.round(performance.now() - t0) });
     };
     // Without an error listener a missing CLI (ENOENT) is an uncaught exception that takes the whole daemon down
@@ -185,12 +215,15 @@ export function prepareCodex() {
   writeFileSync(join(CODEX_HOME, "config.toml"), 'web_search = "disabled"\n');
 }
 
-export async function askClaude(req, { model = "opus" } = {}) {
+export async function askClaude(req, { model, effort } = {}) {
+  const cfg = claudeConfig();
+  model ??= cfg.model;
+  effort ??= cfg.effort;
   const { mcp } = prepare();
   const r = await run(
     "claude",
     ["-p", promptOf(req), "--model", model, "--tools", "", "--output-format", "json", "--no-session-persistence",
-      "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM, "--json-schema", JSON.stringify(schemaOf(req))],
+      "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM, "--json-schema", JSON.stringify(schemaOf(req)), ...(effort ? ["--effort", effort] : [])],
     { cwd: RUN },
   );
   try {

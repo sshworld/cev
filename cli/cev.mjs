@@ -2,13 +2,13 @@
 // usage: cev decide [req.json|-] [--only claude|codex] [--full] [--local]   (no file or "-": read stdin)
 //        cev status
 //        cev --version
-// Uses the daemon's warm pool when it's running, otherwise asks cold from this process.
+// Uses the daemon's warm pool, starting the daemon if needed; when that isn't possible it asks cold from this process.
 // Exit codes: 0 decided (an escalation is still a decision), 1 the decision failed or the daemon refused it, 2 usage.
 import { readFileSync } from "node:fs";
 import { decide } from "../core/cev.mjs";
 import { VERSION } from "../core/tool.mjs";
+import { BASE, ensureDaemon } from "../core/client.mjs";
 
-const BASE = `http://127.0.0.1:${process.env.CEV_PORT ?? 7767}`;
 const USAGE = "usage: cev decide [req.json|-] [--only claude|codex] [--full] [--local]\n       cev status\n       cev --version";
 const die = (msg, code = 1) => {
   console.error(msg);
@@ -51,6 +51,7 @@ try {
 
 let result = null;
 if (!only && !flags.has("--local")) {
+  await ensureDaemon().catch(() => {}); // can't start one: the cold path below still decides
   const r = await fetch(`${BASE}/decide`, { method: "POST", body: JSON.stringify(req) }).catch(() => null);
   if (r?.ok) result = await r.json();
   // The daemon answered but refused (bad request, busy): report it. Falling back to cold would pile uncapped work

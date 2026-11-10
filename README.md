@@ -172,6 +172,18 @@ cev status                       # daemon health, queue, counters
 
 The daemon also serves `POST /decide` (plain JSON), `GET /health`, `POST /retire` (exit if idle; used on version change), and `POST /mcp` (MCP over Streamable HTTP, JSON responses only) for clients that prefer to connect by URL. It rejects any browser `Origin` other than localhost.
 
+### Command gate (experimental)
+
+`cli/gate.mjs` is a Claude Code `PreToolUse` hook. For a shell command whose shape can be hard to undo (`git push`, `rm -r`, `kubectl delete`, a publish or deploy and so on) it asks cev whether the command should run without the user confirming. Other commands pass without a model call.
+
+```json
+{ "hooks": { "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "node /path/to/cev/cli/gate.mjs" }] }] } }
+```
+
+- `CEV_GATE=shadow` (the default) only records each decision in `~/.cev/gate.jsonl`, in the background: once the hook input is read the command goes ahead without waiting for the decision. Run it this way first and read the log.
+- `CEV_GATE=enforce` returns `"ask"` when cev does not clearly say `proceed`, so the user confirms. It never returns `"allow"` or `"deny"`: a command it passes still goes through Claude Code's own permission checks.
+- **It is not a safety boundary.** The pattern list that decides which commands are looked at missed 8 of 20 dangerous commands written after it (`bench/gate-holdout.json`). Treat it as a second look at familiar risky commands, and keep your permission settings as they are.
+
 ### Configuration
 
 Set these environment variables on whatever starts the daemon (the bridge passes its own environment through).
@@ -180,6 +192,9 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 |---|---|---|
 | `CEV_PORT` | `7767` | daemon port (loopback only) |
 | `CEV_CODEX` | off | `1` adds Codex as a second opinion |
+| `CEV_CLAUDE_MODEL` | `opus` | which Claude answers: an alias (`opus`, `sonnet`, `haiku`) or a full model id. See [Which model](#which-model) before changing it |
+| `CEV_CLAUDE_EFFORT` | CLI default | `low`, `medium`, `high`, `xhigh` or `max` |
+| `CEV_GATE` | `shadow` | command gate mode: `shadow`, `enforce` or `off` |
 | `CEV_POOL` | `2` | warm Claude processes and spare Codex threads |
 | `CEV_CONCURRENCY` | `4` | decisions in flight; the rest queue |
 | `CEV_MAX_QUEUE` | `32` | decisions allowed to wait; more get 503 |
@@ -187,7 +202,7 @@ Set these environment variables on whatever starts the daemon (the bridge passes
 | `CEV_MAX_AGE_H` | `6` | hours before the pool is respawned between decisions |
 | `CEV_TIER` | `priority` | Codex service tier. `priority` was about 1.25× faster in our runs but uses more of your plan. Set it empty to use the standard tier. |
 
-The models are Claude Opus (the `opus` alias) and `gpt-6.1-sol` at `low` reasoning effort. They are defaults in `core/warm.mjs` and `core/cev.mjs`.
+The models are Claude Opus (the `opus` alias) and `gpt-6.1-sol` at `low` reasoning effort. A mistyped `CEV_CLAUDE_EFFORT`, or a `CEV_CLAUDE_MODEL` that isn't shaped like a model name, is an error at start-up. A well-formed name that doesn't exist fails at the first decision, which then escalates; it never falls back to another model.
 
 ### Files cev writes
 
@@ -258,6 +273,26 @@ Other measurements:
 - **Batching.** Four questions about one dependency-bump PR took 4.9s in one call, against 23.7s asked one at a time. Three answers matched. On the fourth, "does it change only package.json and the lockfile?", the batched call answered yes, while asked on its own one model abstained and the question escalated.
 
 The full reports are `bench/results/report.html` (easy set) and `bench/results/report-hard.html` (hard set). Open them locally.
+
+### Which model
+
+Measured on 2026-11-10 with lean Claude alone, on 300 cases: the 60 above plus 240 new ones (`bench/cases-x-*.json`: on-call operations, business operations, agent self-checks, content and data work; 55 of them have the gold answer "escalate").
+
+| model | auto-answered right | auto-answered **wrong** | escalated | cold latency (median) |
+|---|---|---|---|---|
+| Opus 5.5 (default) | 240 | **0** | 60 | 3.2–3.9s |
+| Sonnet 5.5 | 239 | **1** | 60 | 2.9–3.4s |
+| Haiku 5.5 (first 60 only) | 56 | **1** | 3 | 3.7s |
+| gpt-6.1-sol alone (new 240 only) | 186 | **0** | 54 | 5.4–5.8s |
+
+- **The default stays Opus.** It is the only Claude model with no wrong auto-answer. With 300 clean cases, the most this supports is "wrong less than about 1% of the time" (95% confidence); it is not proof of zero.
+- **A cheaper model is not faster.** Cold latency is about 3s for every model because most of it is starting the CLI. Warm, a decision is about 1.5s for Opus and 1.4s for Sonnet; about 0.8s of that passes before the first token, whatever the answer length.
+- **Asking the cheap model first does not help.** The one case Haiku got wrong it answered with confidence 0.83, so it would never have been passed up to a stronger model.
+- **Repeatability.** The first 60 cases asked three times each through the warm pool: 58 gave the same result every time, 2 moved between an answer and an escalation because their confidence sat at the threshold, and none gave two different auto-answers.
+- **Small local models are not usable here.** Read from first-token probabilities through llama.cpp on CPU, Qwen2.5 1.5B answered in 0.7s but 16 of its 43 auto-answers were wrong, and Phi-4-mini took 3.2s with 7 wrong. Raising the confidence bar to 0.999 still left wrong answers in both.
+- The new cases were written by Claude models and checked against Codex, whose answer matched the label or an accepted alternative on all 240. Cases that are hard specifically for Claude may be under-represented.
+
+Reproduce with `npm run bench:models`, `npm run bench:stability` and `node bench/local.mjs --url <llama.cpp server>`.
 
 ### Caveats
 

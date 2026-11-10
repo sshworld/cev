@@ -8,7 +8,7 @@
 // - POST /retire  exit if idle (a bridge of another version replaces the daemon this way)
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { route, checkRequest, codexEnabled, appendLog, ensureHome } from "./cev.mjs";
+import { route, checkRequest, codexEnabled, claudeConfig, appendLog, ensureHome } from "./cev.mjs";
 import { warmDecider } from "./warm.mjs";
 import { VERSION, PROTOCOLS, handleMcp, parseError } from "./tool.mjs";
 
@@ -108,7 +108,7 @@ const server = createServer(async (req, res) => {
     if (!localOrigin(req.headers.origin)) return send(res, 403, { error: "origin not allowed" });
     const url = new URL(req.url, "http://127.0.0.1"); // inside try: a malformed target must not take the daemon down
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
+      return send(res, 200, { ok: true, version: VERSION, pid: process.pid, codex: CODEX, claude: CLAUDE, awake: decider.awake(), codexTier: decider.codexTier(), inflight, queued: queue.length, sessions: sessions.size, ...stats });
     }
     // A bridge of another cev version asks an idle daemon to step aside. The idle check and the exit happen here,
     // in one tick, so no decision can slip in between (a SIGTERM from outside could cut one off).
@@ -159,6 +159,7 @@ const server = createServer(async (req, res) => {
 });
 
 ensureHome();
+const CLAUDE = claudeConfig(); // a bad CEV_CLAUDE_MODEL / CEV_CLAUDE_EFFORT stops the daemon here, before it listens
 server.on("error", (e) => {
   if (e.code === "EADDRINUSE") {
     console.error(`cev: port ${PORT} already in use, another daemon is running`);
@@ -167,7 +168,7 @@ server.on("error", (e) => {
   throw e;
 });
 server.listen(PORT, "127.0.0.1", () => {
-  decider = warmDecider({ pool: Number(env("CEV_POOL", 2)), serviceTier: env("CEV_TIER", "priority") || undefined, codex: CODEX });
+  decider = warmDecider({ pool: Number(env("CEV_POOL", 2)), serviceTier: env("CEV_TIER", "priority") || undefined, codex: CODEX, claudeModel: CLAUDE.model, claudeEffort: CLAUDE.effort });
   console.error(`cev ${VERSION} listening on 127.0.0.1:${PORT} (pid ${process.pid}, ${CODEX ? "Claude + Codex" : "Claude only"})`);
 });
 

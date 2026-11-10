@@ -5,7 +5,7 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
-import { HOME, SYSTEM, schemaOf, promptOf, combine, prepare, prepareCodex, askClaude, askCodex, validVote, codexEnabled, CODEX_HOME, CODEX_OFF } from "./cev.mjs";
+import { HOME, SYSTEM, schemaOf, promptOf, combine, prepare, prepareCodex, askClaude, askCodex, validVote, codexEnabled, claudeConfig, CODEX_HOME, CODEX_OFF } from "./cev.mjs";
 
 const RUN = join(HOME, "run");
 
@@ -16,12 +16,12 @@ const LIVE = new Set();
 const EXIT_GRACE_MS = 5_000;
 
 class ClaudeProc {
-  constructor({ model }) {
+  constructor({ model, effort }) {
     const { mcp } = prepare();
     this.child = spawn(
       "claude",
       ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--model", model, "--tools", "", "--no-session-persistence",
-        "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM],
+        "--setting-sources", "", "--strict-mcp-config", "--mcp-config", mcp, "--system-prompt", SYSTEM, ...(effort ? ["--effort", effort] : [])],
       { cwd: RUN, stdio: ["pipe", "pipe", "pipe"] },
     );
     this.dead = false;
@@ -86,7 +86,12 @@ class ClaudeProc {
 }
 
 // The schema can't be enforced on this path, so check every answer by hand (combine checks again per vote)
-const validate = (req, answer) => req.questions.every((q) => validVote(q, answer?.[q.id]));
+// An answer with a field no question asked for is malformed as a whole, even if the votes in it look fine
+const validate = (req, answer) => {
+  if (answer === null || typeof answer !== "object" || Array.isArray(answer)) return false;
+  const ids = new Set(req.questions.map((q) => q.id));
+  return Object.keys(answer).every((k) => ids.has(k)) && req.questions.every((q) => validVote(q, answer[q.id]));
+};
 
 // ── Codex app-server ──
 class CodexServer {
@@ -229,7 +234,7 @@ class CodexServer {
 // ── Warm decider ──
 // sleep() tears the pool down to free memory; the next decision brings it back.
 // Codex is started only when it is enabled or first asked, so a Claude-only setup never pays for an app-server.
-export function warmDecider({ claudeModel = "opus", codexModel = "gpt-6.1-sol", effort = "low", serviceTier, pool = 2, timeout = 90_000, fallback = true, codex: useCodex = codexEnabled() } = {}) {
+export function warmDecider({ claudeModel = claudeConfig().model, claudeEffort = claudeConfig().effort, codexModel = "gpt-6.1-sol", effort = "low", serviceTier, pool = 2, timeout = 90_000, fallback = true, codex: useCodex = codexEnabled() } = {}) {
   let claudes = [];
   let codex = null;
   let awake = false;
@@ -239,7 +244,7 @@ export function warmDecider({ claudeModel = "opus", codexModel = "gpt-6.1-sol", 
   };
   const fill = () => {
     claudes = claudes.filter((p) => !p.dead);
-    while (claudes.length < pool) claudes.push(new ClaudeProc({ model: claudeModel }));
+    while (claudes.length < pool) claudes.push(new ClaudeProc({ model: claudeModel, effort: claudeEffort }));
   };
   const wake = () => {
     if (awake) return;
@@ -257,12 +262,12 @@ export function warmDecider({ claudeModel = "opus", codexModel = "gpt-6.1-sol", 
       r = await codex.ask(req, { timeout });
     } else {
       claudes = claudes.filter((p) => !p.dead);
-      const proc = claudes.shift() ?? new ClaudeProc({ model: claudeModel });
+      const proc = claudes.shift() ?? new ClaudeProc({ model: claudeModel, effort: claudeEffort });
       fill();
       r = await proc.ask(req, { timeout });
     }
     if (r.ok || !fallback) return { ...r, via: "warm" };
-    const c = m === "codex" ? await askCodex(req, { model: codexModel, effort }) : await askClaude(req, { model: claudeModel });
+    const c = m === "codex" ? await askCodex(req, { model: codexModel, effort }) : await askClaude(req, { model: claudeModel, effort: claudeEffort });
     return { ...c, via: "cold", warmError: r.error };
   }
 

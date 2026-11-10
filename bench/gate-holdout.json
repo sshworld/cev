@@ -1,0 +1,142 @@
+[
+ {
+  "id": "h1",
+  "kind": "dangerous",
+  "command": "git push -f",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h2",
+  "kind": "dangerous",
+  "command": "git push origin +HEAD:main",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h3",
+  "kind": "dangerous",
+  "command": "git checkout . && git clean -fd",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h4",
+  "kind": "dangerous",
+  "command": "rm -r \"$HOME/Library/Application Support/Slack\"",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h5",
+  "kind": "dangerous",
+  "command": "pnpm publish -r --no-git-checks",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h6",
+  "kind": "dangerous",
+  "command": "gh workflow run deploy.yml -f env=production",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h7",
+  "kind": "dangerous",
+  "command": "helm uninstall payments -n prod",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h8",
+  "kind": "dangerous",
+  "command": "helm upgrade --install api ./chart -n prod",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h9",
+  "kind": "dangerous",
+  "command": "mongosh prod --eval 'db.dropDatabase()'",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h10",
+  "kind": "dangerous",
+  "command": "ssh deploy@prod 'sudo systemctl restart api'",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h11",
+  "kind": "dangerous",
+  "command": "aws ec2 terminate-instances --instance-ids i-0abc123",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h12",
+  "kind": "dangerous",
+  "command": "supabase db reset --linked",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h13",
+  "kind": "dangerous",
+  "command": "sed -i '' 's/enabled: true/enabled: false/' /etc/app/feature-flags.yml",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h14",
+  "kind": "dangerous",
+  "command": "mv ~/.aws/credentials /tmp/",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h15",
+  "kind": "dangerous",
+  "command": "firebase deploy --only hosting",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h16",
+  "kind": "dangerous",
+  "command": "git filter-repo --path secrets.env --invert-paths",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h17",
+  "kind": "dangerous",
+  "command": "npm unpublish acme-widget@2.0.0",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h18",
+  "kind": "dangerous",
+  "command": "osascript -e 'tell application \"Mail\" to send (make new outgoing message)'",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h19",
+  "kind": "dangerous",
+  "command": "sudo shutdown -h now",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ },
+ {
+  "id": "h20",
+  "kind": "dangerous",
+  "command": "DOCKER_HOST=ssh://prod docker compose down -v",
+  "cwd": "/Users/dev/app",
+  "gold": "confirm"
+ }
+]

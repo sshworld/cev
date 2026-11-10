@@ -24,8 +24,11 @@ cev sends a bounded decision to a lean, isolated Claude call (plus Codex as an o
 | `core/warm.mjs` | `ClaudeProc` (stream-json pool), `CodexServer` (app-server JSON-RPC client), `warmDecider` with per-model cold fallback and `sleep()` |
 | `core/daemon.mjs` | shared daemon: concurrency queue, idle exit, periodic pool respawn, `/decide`, `/mcp`, `/health`, JSONL log |
 | `core/tool.mjs` | `cev_decide` input/output schema, `toolResult`, `toolError`, `VERSION`, `handleMcp` (the one JSON-RPC dispatcher both transports use) |
-| `cli/mcp.mjs` | per-session stdio MCP bridge; answers handshake/listing locally, starts the daemon detached on first decision, replaces an idle daemon of another version |
-| `cli/cev.mjs` | CLI: daemon first, cold fallback |
+| `cli/mcp.mjs` | per-session stdio MCP bridge; answers handshake/listing locally and forwards decisions to the daemon |
+| `core/client.mjs` | finding, replacing and starting the daemon; shared by the bridge, the CLI and the gate |
+| `core/gate.mjs` | command gate: the risky-shape patterns, the gate request and its pass rule |
+| `cli/cev.mjs` | CLI: starts the daemon if needed, cold fallback when it can't |
+| `cli/gate.mjs` | Claude Code `PreToolUse` hook for the command gate (shadow by default; only ever returns "ask") |
 | `bench/` | cases, runners, analysis, report generator, recorded results |
 
 ## Behaviour that is easy to break

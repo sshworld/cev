@@ -1,13 +1,13 @@
 {
   "name": "cev",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Hand bounded decisions to an isolated Claude call over MCP, with an optional Codex second opinion: typed questions in, an answer or an escalation out.",
   "type": "module",
   "license": "MIT",
   "author": "sshworld",
   "repository": { "type": "git", "url": "git+https://github.com/sshworld/cev.git" },
   "engines": { "node": ">=20" },
-  "bin": { "cev": "cli/cev.mjs", "cev-mcp": "cli/mcp.mjs" },
+  "bin": { "cev": "cli/cev.mjs", "cev-mcp": "cli/mcp.mjs", "cev-gate": "cli/gate.mjs" },
   "files": ["core", "cli"],
   "scripts": {
     "test": "node --test test/",
@@ -16,7 +16,10 @@
     "bench": "node bench/run.mjs && node bench/analyze.mjs && node bench/report.mjs",
     "bench:hard": "node bench/run.mjs --tag hard --cases cases-hard.json && node bench/analyze.mjs --tag hard --cases cases-hard.json && node bench/report.mjs --tag hard --cases cases-hard.json",
     "bench:speed": "node bench/speed.mjs",
-    "bench:multi": "node bench/multi.mjs"
+    "bench:multi": "node bench/multi.mjs",
+    "bench:models": "node bench/models.mjs --files cases.json,cases-hard.json,cases-x-a.json,cases-x-b.json,cases-x-c.json,cases-x-d.json --arms opus,sonnet",
+    "bench:stability": "node bench/stability.mjs",
+    "bench:gate": "node bench/gate.mjs"
   },
   "private": true
 }
